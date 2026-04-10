@@ -163,7 +163,7 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
 
             const curriculumSkills = extractedTopics.join(", ")
 
-        const query = new URLSearchParams({
+            const query = new URLSearchParams({
                 mode: "curriculum",
                 courseId: String(topicCourseIds[0]),
                 courseIds: topicCourseIds.join(","),
@@ -174,7 +174,7 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
                 jdTitle: jdTitle || "Role Assessment",
                 jdDescription: jdText,
                 jdSkills: extractedTopics.join(", "),
-        })
+            })
 
             router.push(`/assessment-engine?${query.toString()}`)
         } catch (error) {
