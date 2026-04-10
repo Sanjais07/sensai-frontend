@@ -155,6 +155,7 @@ export default function Home() {
         <Header
           showCreateCourseButton={hasAnyCourses || (hasSchool ?? false)}
           showTryDemoButton={!hasLearningCourses}
+          showInsightsButton={true}
         />
 
         {/* Main content */}

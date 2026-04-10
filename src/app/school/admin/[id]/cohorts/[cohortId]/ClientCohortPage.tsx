@@ -677,7 +677,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
     if (loading) {
         return (
             <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
-                <Header showCreateCourseButton={false} />
+                <Header showCreateCourseButton={false} showInsightsButton={true} />
                 <div className="flex justify-center items-center py-12">
                     <div className="w-12 h-12 border-t-2 border-b-2 border-foreground rounded-full animate-spin"></div>
                 </div>
@@ -705,7 +705,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                     box-shadow: none !important;
                 }
             `}</style>
-            <Header showCreateCourseButton={false} />
+            <Header showCreateCourseButton={false} showInsightsButton={true} />
             <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
                 <div className="container mx-auto px-4 py-8">
                     <main>

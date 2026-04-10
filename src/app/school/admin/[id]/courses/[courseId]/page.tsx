@@ -1918,6 +1918,7 @@ export default function CreateCourse() {
             {/* Use the reusable Header component with showCreateCourseButton set to false */}
             <Header
                 showCreateCourseButton={false}
+                showInsightsButton={true}
             />
 
             {/* Add overlay when course is being generated */}

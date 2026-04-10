@@ -49,6 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
                 <Header
                     showCreateCourseButton={false}
+                    showInsightsButton={true}
                 />
                 <div className="flex justify-center items-center py-12">
                     <div className="w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin border-black dark:border-white"></div>

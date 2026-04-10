@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import CourseCard from "@/components/CourseCard";
 import CohortCard from "@/components/CohortCard";
+import SchoolDashboardOverview from "@/components/SchoolDashboardOverview";
 import InviteMembersDialog from "@/components/InviteMembersDialog";
 import CreateCohortDialog from "@/components/CreateCohortDialog";
 import CreateCourseDialog from '@/components/CreateCourseDialog';
@@ -380,6 +381,10 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         );
     };
 
+    const courseCount = school?.courses.length || 0;
+    const cohortCount = school?.cohorts.length || 0;
+    const memberCount = school?.members.length || 0;
+
     const handleCreateCohort = async (cohort: any) => {
         try {
             // Important: Navigate before closing the dialog to prevent flash of school page
@@ -483,6 +488,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
             <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
                 <Header
                     showCreateCourseButton={false}
+                    showInsightsButton={true}
                 />
                 <div className="flex justify-center items-center py-12">
                     <div className="w-12 h-12 border-t-2 border-b-2 rounded-full animate-spin border-black dark:border-white"></div>
@@ -503,6 +509,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         <>
             <Header
                 showCreateCourseButton={false}
+                showInsightsButton={true}
             />
 
             <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
@@ -602,9 +609,22 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                             {/* Courses Tab */}
                             {activeTab === 'courses' && (
                                 <div>
+                                    <SchoolDashboardOverview
+                                        schoolName={school.name}
+                                        schoolUrl={school.url}
+                                        courseCount={courseCount}
+                                        cohortCount={cohortCount}
+                                        memberCount={memberCount}
+                                        activeTab={activeTab}
+                                        onNavigate={handleTabChange}
+                                        onCreateCourse={() => setIsCreateCourseDialogOpen(true)}
+                                        onCreateCohort={() => setIsCreateCohortDialogOpen(true)}
+                                        onInviteMembers={() => setIsInviteDialogOpen(true)}
+                                    />
+
                                     {school.courses.length > 0 ? (
                                         <>
-                                            <div className="flex justify-start items-center mb-6">
+                                            <div className="flex justify-start items-center mb-6 mt-8">
                                                 <button
                                                     onClick={() => setIsCreateCourseDialogOpen(true)}
                                                     className="px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer bg-purple-600 dark:bg-white text-white dark:text-black"
@@ -628,9 +648,9 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                             </div>
                                         </>
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center py-20">
-                                            <h2 className="text-4xl font-light mb-4">What if your next big idea became a course?</h2>
-                                            <p className="text-gray-600 dark:text-gray-400 mb-8">It might be easier than you think</p>
+                                        <div className="mt-8 flex flex-col items-center justify-center rounded-[28px] border border-dashed border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 py-20 px-6 text-center">
+                                            <h2 className="text-4xl font-semibold mb-4 text-gray-900 dark:text-white">What if your next big idea became a course?</h2>
+                                            <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-xl">It might be easier than you think</p>
                                             <button
                                                 onClick={() => setIsCreateCourseDialogOpen(true)}
                                                 className="px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer bg-purple-600 dark:bg-white text-white dark:text-black"

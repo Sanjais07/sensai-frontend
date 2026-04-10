@@ -11,16 +11,19 @@ import SchoolPickerDialog from "@/components/SchoolPickerDialog";
 import { ChevronDown, Plus, X, Book, School } from "lucide-react";
 import { Cohort } from "@/types";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
+import { Sparkles } from "lucide-react";
 
 interface HeaderProps {
     showCreateCourseButton?: boolean;
     showTryDemoButton?: boolean;
+    showInsightsButton?: boolean;
     centerSlot?: React.ReactNode;
 }
 
 export function Header({
     showCreateCourseButton = true,
     showTryDemoButton = false,
+    showInsightsButton = false,
     centerSlot,
 }: HeaderProps) {
     const router = useRouter();
@@ -110,6 +113,11 @@ export function Header({
         setMobileActionsOpen(false);
     };
 
+    const handleInsightsClick = () => {
+        router.push("/insights");
+        setMobileActionsOpen(false);
+    };
+
     // Handle success callback from CreateCourseDialog
     const handleCourseCreationSuccess = (courseData: { id: string; name: string }) => {
         if (hasOwnedSchool && schoolId) {
@@ -160,8 +168,8 @@ export function Header({
                             alt="SensAI Logo"
                             width={120}
                             height={40}
-                            className="hidden dark:block w-[100px] h-auto sm:w-[120px]"
-                            style={{ maxWidth: '100%', height: 'auto' }}
+                            className="hidden dark:block w-[100px] h-[33px] sm:w-[120px] sm:h-[40px]"
+                            style={{ maxWidth: '100%' }}
                             priority
                         />
                         {/* Light mode logo */}
@@ -170,8 +178,8 @@ export function Header({
                             alt="SensAI Logo"
                             width={120}
                             height={40}
-                            className="block dark:hidden w-[100px] h-auto sm:w-[120px]"
-                            style={{ maxWidth: '100%', height: 'auto' }}
+                            className="block dark:hidden w-[100px] h-[33px] sm:w-[120px] sm:h-[40px]"
+                            style={{ maxWidth: '100%' }}
                             priority
                         />
                     </div>
@@ -192,6 +200,14 @@ export function Header({
                             className="hidden md:block px-6 py-3 text-sm font-medium rounded-full cursor-pointer bg-black/10 dark:bg-white/20 text-black dark:text-white hover:bg-black/20 dark:hover:bg-white/30"
                             >
                                 Try a demo
+                            </button>
+                        )}
+                        {showInsightsButton && (
+                            <button
+                                onClick={handleInsightsClick}
+                                className="hidden md:block px-6 py-3 text-sm font-medium rounded-full cursor-pointer bg-[#0f766e] text-white hover:bg-[#115e59]"
+                            >
+                                Insights
                             </button>
                         )}
                         {showCreateCourseButton && (
@@ -287,7 +303,7 @@ export function Header({
             </div>
 
             {/* Mobile Floating Action Button and Menu */}
-            {showCreateCourseButton && (
+            {(showCreateCourseButton || showTryDemoButton || showInsightsButton) && (
                 <div className="md:hidden">
                     {/* Semi-transparent overlay */}
                     {mobileActionsOpen && (
@@ -308,7 +324,9 @@ export function Header({
                         >
                             {mobileActionsOpen ?
                                 <X className="h-6 w-6" /> :
-                                hasOwnedSchool ? (
+                                showInsightsButton && !showCreateCourseButton && !showTryDemoButton ? (
+                                    <Sparkles className="h-6 w-6" />
+                                ) : hasOwnedSchool ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
                                         <rect width="7" height="9" x="3" y="3" rx="1"></rect>
                                         <rect width="7" height="5" x="14" y="3" rx="1"></rect>
@@ -346,6 +364,21 @@ export function Header({
                                                 <path d="m16.7 18.4 1.4 1.4"></path>
                                                 <path d="m5.6 5.6 1.4 1.4"></path>
                                             </svg>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {showInsightsButton && (
+                                    <div className="flex items-center gap-3">
+                                        <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                            Insights
+                                        </span>
+                                        <button
+                                            onClick={handleInsightsClick}
+                                            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
+                                            aria-label="Open insights"
+                                        >
+                                            <Sparkles className="h-6 w-6" />
                                         </button>
                                     </div>
                                 )}

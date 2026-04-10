@@ -410,6 +410,7 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
             <div className="hidden sm:block">
                 <Header
                     showCreateCourseButton={false}
+                    showInsightsButton={Boolean(isAdminOrOwner || activeCohort?.role === 'mentor')}
                     centerSlot={
                         <MemberSchoolViewHeader
                             cohorts={cohorts}
