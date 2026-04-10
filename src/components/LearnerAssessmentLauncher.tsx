@@ -18,7 +18,7 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
     const router = useRouter()
     const [availableCourses, setAvailableCourses] = useState<CourseLite[]>(courses)
     const [selectedCourseId, setSelectedCourseId] = useState<number | null>(courses[0]?.id ?? null)
-    const [jdTitle, setJdTitle] = useState("Product Analyst")
+    const [jdTitle, setJdTitle] = useState("")
     const [jdText, setJdText] = useState("")
     const [jdFileName, setJdFileName] = useState("")
     const [extractedTopics, setExtractedTopics] = useState<string[]>([])
@@ -38,6 +38,7 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
 
         const query = new URLSearchParams({
             mode: "curriculum",
+            lockMode: "1",
             courseId: String(selectedCourse.id),
             orgId: String(orgId),
             courseName: selectedCourse.name,
@@ -81,11 +82,14 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
                 throw new Error(message || "Failed to extract JD topics")
             }
 
-            const data = await response.json() as { topics?: string[]; extracted_text?: string }
+            const data = await response.json() as { topics?: string[]; extracted_text?: string; jd_title?: string }
             const topics = Array.isArray(data.topics) ? data.topics.slice(0, 1) : []
 
             setExtractedTopics(topics)
             setJdText(data.extracted_text || "")
+            if (data.jd_title && data.jd_title.trim()) {
+                setJdTitle(data.jd_title.trim())
+            }
 
             if (topics.length === 0) {
                 setJdError("No clear topics were extracted from the uploaded JD.")
@@ -164,7 +168,8 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
             const curriculumSkills = extractedTopics.join(", ")
 
             const query = new URLSearchParams({
-                mode: "curriculum",
+                mode: "jd",
+                lockMode: "1",
                 courseId: String(topicCourseIds[0]),
                 courseIds: topicCourseIds.join(","),
                 orgId: String(orgId),
@@ -240,7 +245,8 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
                         <input
                             value={jdTitle}
                             onChange={(e) => setJdTitle(e.target.value)}
-                            placeholder="Role title"
+                            placeholder="Role title (auto-filled from JD upload)"
+                            disabled={!jdText.trim()}
                             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#0f0f0f]"
                         />
                         <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 px-3 py-3 text-sm dark:border-gray-700">

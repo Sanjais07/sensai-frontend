@@ -15,9 +15,9 @@ import {
     saveReview,
 } from '@/lib/assessmentApi'
 
-const sectionCard = 'rounded-xl border border-neutral-200 bg-white p-4 shadow-sm'
-const labelClass = 'mb-1 block text-sm font-medium text-neutral-700'
-const inputClass = 'w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500'
+const sectionCard = 'rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-[#222222] dark:bg-[#121212] dark:shadow-none'
+const labelClass = 'mb-1 block text-sm font-medium text-neutral-700 dark:text-gray-300'
+const inputClass = 'w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-neutral-500 dark:border-[#333333] dark:bg-[#0f0f0f] dark:text-white dark:focus:border-[#555555]'
 
 interface PendingReviewState {
     action: 'accept' | 'edit' | 'reject'
@@ -41,6 +41,7 @@ export default function AssessmentEnginePage() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [mode, setMode] = useState<AssessmentMode>('curriculum')
+    const [isModeLocked, setIsModeLocked] = useState(false)
     const [targetLevel, setTargetLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate')
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -68,6 +69,7 @@ export default function AssessmentEnginePage() {
 
     useEffect(() => {
         const modeParam = searchParams.get('mode')
+        const lockModeParam = searchParams.get('lockMode')
         const courseIdParam = searchParams.get('courseId')
         const courseIdsParam = searchParams.get('courseIds')
         const orgIdParam = searchParams.get('orgId')
@@ -81,6 +83,8 @@ export default function AssessmentEnginePage() {
         if (modeParam === 'curriculum' || modeParam === 'jd') {
             setMode(modeParam)
         }
+
+        setIsModeLocked(lockModeParam === '1' || lockModeParam === 'true')
 
         if (courseIdParam) {
             const parsedCourseId = Number(courseIdParam)
@@ -360,11 +364,11 @@ export default function AssessmentEnginePage() {
     }
 
     return (
-        <main className="min-h-screen bg-neutral-50 px-4 py-6 text-neutral-900 md:px-8">
+        <main className="min-h-screen bg-neutral-50 px-4 py-6 text-neutral-900 dark:bg-[#0A0A0A] dark:text-white md:px-8">
             <div className="mx-auto max-w-7xl space-y-6">
                 <section className={sectionCard}>
-                    <h1 className="text-2xl font-semibold">Assessment Intelligence Engine</h1>
-                    <p className="mt-1 text-sm text-neutral-600">
+                    <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Assessment Intelligence Engine</h1>
+                    <p className="mt-1 text-sm text-neutral-600 dark:text-gray-400">
                         Generate, validate, and review assessments for both trainer and recruiter workflows.
                     </p>
                 </section>
@@ -373,9 +377,24 @@ export default function AssessmentEnginePage() {
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
                             <label className={labelClass}>Mode</label>
-                            <select className={inputClass} value={mode} onChange={(e) => setMode(e.target.value as AssessmentMode)}>
-                                <option value="curriculum">Mode A: Curriculum</option>
-                                <option value="jd">Mode B: Job Description</option>
+                            <select
+                                className={inputClass}
+                                value={mode}
+                                onChange={(e) => setMode(e.target.value as AssessmentMode)}
+                                disabled={isModeLocked}
+                            >
+                                {isModeLocked ? (
+                                    mode === 'curriculum' ? (
+                                        <option value="curriculum">Mode A: Curriculum</option>
+                                    ) : (
+                                        <option value="jd">Mode B: Job Description</option>
+                                    )
+                                ) : (
+                                    <>
+                                        <option value="curriculum">Mode A: Curriculum</option>
+                                        <option value="jd">Mode B: Job Description</option>
+                                    </>
+                                )}
                             </select>
                         </div>
                         <div>
@@ -392,7 +411,7 @@ export default function AssessmentEnginePage() {
                         </div>
                         <div className="flex items-end">
                             <button
-                                className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-50"
+                                className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-gray-200"
                                 onClick={handleGenerate}
                                 disabled={isLoading}
                             >
@@ -401,7 +420,7 @@ export default function AssessmentEnginePage() {
                         </div>
                     </div>
 
-                    <div className="rounded-md border border-dashed border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-700">
+                    <div className="rounded-md border border-dashed border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-700 dark:border-[#2A2A2A] dark:bg-[#171717] dark:text-gray-300">
                         {modeTitle}
                     </div>
 
@@ -441,14 +460,14 @@ export default function AssessmentEnginePage() {
                         </div>
                     )}
 
-                    {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+                    {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">{error}</p>}
                 </section>
 
                 <section className={`${sectionCard} space-y-3`}>
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h2 className="text-lg font-semibold">Coverage & Validation Report</h2>
+                        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Coverage & Validation Report</h2>
                         <button
-                            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-100 disabled:opacity-50"
+                            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-100 disabled:opacity-50 dark:border-[#333333] dark:text-gray-200 dark:hover:bg-[#1D1D1D]"
                             onClick={handleValidate}
                             disabled={!assessment || isLoading}
                         >
@@ -457,9 +476,9 @@ export default function AssessmentEnginePage() {
                     </div>
 
                     {!coverageReport ? (
-                        <p className="text-sm text-neutral-600">Generate an assessment to see validation metrics.</p>
+                        <p className="text-sm text-neutral-600 dark:text-gray-400">Generate an assessment to see validation metrics.</p>
                     ) : (
-                        <pre className="max-h-72 overflow-auto rounded-md bg-neutral-900 p-3 text-xs text-neutral-100">
+                        <pre className="max-h-72 overflow-auto rounded-md bg-neutral-900 p-3 text-xs text-neutral-100 dark:bg-[#0b0b0b]">
                             {JSON.stringify(coverageReport, null, 2)}
                         </pre>
                     )}
@@ -467,9 +486,9 @@ export default function AssessmentEnginePage() {
 
                 <section className={`${sectionCard} space-y-4`}>
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h2 className="text-lg font-semibold">Review Interface</h2>
+                        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Review Interface</h2>
                         <button
-                            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-50"
+                            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-gray-200"
                             onClick={handleApplyReview}
                             disabled={!assessment || isLoading}
                         >
@@ -478,7 +497,7 @@ export default function AssessmentEnginePage() {
                     </div>
 
                     {assessmentItems.length === 0 ? (
-                        <p className="text-sm text-neutral-600">No questions yet. Generate an assessment first.</p>
+                        <p className="text-sm text-neutral-600 dark:text-gray-400">No questions yet. Generate an assessment first.</p>
                     ) : (
                         <div className="space-y-3">
                             {assessmentItems.map((item) => {
@@ -489,13 +508,13 @@ export default function AssessmentEnginePage() {
                                 }
 
                                 return (
-                                    <article key={item.item_id} className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+                                    <article key={item.item_id} className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-[#2A2A2A] dark:bg-[#171717]">
                                         <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-                                            <span className="rounded bg-neutral-200 px-2 py-0.5 font-semibold">{item.item_id}</span>
-                                            <span className="rounded bg-neutral-200 px-2 py-0.5">{item.type}</span>
-                                            <span className="rounded bg-neutral-200 px-2 py-0.5">{item.difficulty}</span>
-                                            <span className="rounded bg-neutral-200 px-2 py-0.5">status: {item.review_status}</span>
-                                            <span className="rounded bg-neutral-200 px-2 py-0.5">skills: {item.skill_tags.join(', ')}</span>
+                                            <span className="rounded bg-neutral-200 px-2 py-0.5 font-semibold text-neutral-900 dark:bg-[#2A2A2A] dark:text-white">{item.item_id}</span>
+                                            <span className="rounded bg-neutral-200 px-2 py-0.5 text-neutral-900 dark:bg-[#2A2A2A] dark:text-gray-200">{item.type}</span>
+                                            <span className="rounded bg-neutral-200 px-2 py-0.5 text-neutral-900 dark:bg-[#2A2A2A] dark:text-gray-200">{item.difficulty}</span>
+                                            <span className="rounded bg-neutral-200 px-2 py-0.5 text-neutral-900 dark:bg-[#2A2A2A] dark:text-gray-200">status: {item.review_status}</span>
+                                            <span className="rounded bg-neutral-200 px-2 py-0.5 text-neutral-900 dark:bg-[#2A2A2A] dark:text-gray-200">skills: {item.skill_tags.join(', ')}</span>
                                         </div>
 
                                         <label className={labelClass}>Question stem</label>
@@ -561,36 +580,36 @@ export default function AssessmentEnginePage() {
 
                 {savePreview && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                        <div className="flex h-[85vh] w-[95vw] max-w-6xl flex-col rounded-xl bg-white shadow-2xl">
-                            <div className="border-b border-neutral-200 px-6 py-4">
-                                <h3 className="text-xl font-semibold text-neutral-900">Confirm Save To Database</h3>
-                                <p className="mt-1 text-sm text-neutral-600">
+                        <div className="flex h-[85vh] w-[95vw] max-w-6xl flex-col rounded-xl bg-white shadow-2xl dark:bg-[#121212]">
+                            <div className="border-b border-neutral-200 px-6 py-4 dark:border-[#2A2A2A]">
+                                <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">Confirm Save To Database</h3>
+                                <p className="mt-1 text-sm text-neutral-600 dark:text-gray-400">
                                     You are about to save {savePreview.count} questions to the assessment_reviews table.
                                 </p>
                             </div>
 
                             <div className="flex-1 overflow-auto px-6 py-4">
-                                <p className="mb-3 text-sm font-medium text-neutral-700">Questions to be saved:</p>
-                                <ol className="space-y-2 text-sm text-neutral-800">
+                                <p className="mb-3 text-sm font-medium text-neutral-700 dark:text-gray-300">Questions to be saved:</p>
+                                <ol className="space-y-2 text-sm text-neutral-800 dark:text-gray-200">
                                     {savePreview.questions.map((question, index) => (
-                                        <li key={`${index}-${question.slice(0, 30)}`} className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                                        <li key={`${index}-${question.slice(0, 30)}`} className="rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-[#2A2A2A] dark:bg-[#171717]">
                                             {question}
                                         </li>
                                     ))}
                                 </ol>
                             </div>
 
-                            <div className="flex justify-end gap-3 border-t border-neutral-200 px-6 py-4">
+                            <div className="flex justify-end gap-3 border-t border-neutral-200 px-6 py-4 dark:border-[#2A2A2A]">
                                 <button
                                     type="button"
-                                    className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                                    className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 dark:border-[#333333] dark:text-gray-200 dark:hover:bg-[#1D1D1D]"
                                     onClick={() => closeSavePreview(false)}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="button"
-                                    className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700"
+                                    className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-gray-200"
                                     onClick={() => closeSavePreview(true)}
                                 >
                                     OK, Save to DB
@@ -602,13 +621,13 @@ export default function AssessmentEnginePage() {
 
                 {saveSuccessMessage && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                        <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
-                            <h3 className="text-xl font-semibold text-neutral-900">Saved</h3>
-                            <p className="mt-2 text-sm text-neutral-700">{saveSuccessMessage}</p>
+                        <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-[#121212]">
+                            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">Saved</h3>
+                            <p className="mt-2 text-sm text-neutral-700 dark:text-gray-300">{saveSuccessMessage}</p>
                             <div className="mt-5 flex justify-end">
                                 <button
                                     type="button"
-                                    className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700"
+                                    className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-gray-200"
                                     onClick={() => {
                                         const redirectOrgId = orgId || parseInt(localStorage.getItem('orgId') || '0', 10)
                                         if (redirectOrgId > 0) {
