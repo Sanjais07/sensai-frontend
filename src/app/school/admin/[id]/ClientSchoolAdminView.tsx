@@ -605,6 +605,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                             id: Number(course.id),
                                             name: course.name,
                                         }))}
+                                        orgId={Number(id)}
                                     />
 
                                     {school.courses.length > 0 ? (

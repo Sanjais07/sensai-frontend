@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
     Assessment,
     AssessmentItem,
@@ -38,6 +38,7 @@ function parseCSV(value: string): string[] {
 }
 
 export default function AssessmentEnginePage() {
+    const router = useRouter()
     const searchParams = useSearchParams()
     const [mode, setMode] = useState<AssessmentMode>('curriculum')
     const [targetLevel, setTargetLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate')
@@ -57,14 +58,19 @@ export default function AssessmentEnginePage() {
     const [assessment, setAssessment] = useState<Assessment | null>(null)
     const [assessmentId, setAssessmentId] = useState<number | null>(null)
     const [courseId, setCourseId] = useState<number | null>(null)
+    const [courseIds, setCourseIds] = useState<number[]>([])
+    const [orgId, setOrgId] = useState<number | null>(null)
     const [coverageReport, setCoverageReport] = useState<CoverageReport | null>(null)
     const [reviewState, setReviewState] = useState<Record<string, PendingReviewState>>({})
     const [savePreview, setSavePreview] = useState<SavePreviewState | null>(null)
     const savePreviewResolverRef = useRef<((value: boolean) => void) | null>(null)
+    const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null)
 
     useEffect(() => {
         const modeParam = searchParams.get('mode')
         const courseIdParam = searchParams.get('courseId')
+        const courseIdsParam = searchParams.get('courseIds')
+        const orgIdParam = searchParams.get('orgId')
         const courseNameParam = searchParams.get('courseName')
         const curriculumSkillsParam = searchParams.get('curriculumSkills')
         const modulesTextParam = searchParams.get('modulesText')
@@ -80,6 +86,21 @@ export default function AssessmentEnginePage() {
             const parsedCourseId = Number(courseIdParam)
             if (!Number.isNaN(parsedCourseId)) {
                 setCourseId(parsedCourseId)
+            }
+        }
+
+        if (courseIdsParam) {
+            const parsedIds = courseIdsParam
+                .split(',')
+                .map((id) => Number(id.trim()))
+                .filter((id) => !Number.isNaN(id) && id > 0)
+            setCourseIds(Array.from(new Set(parsedIds)))
+        }
+
+        if (orgIdParam) {
+            const parsedOrgId = Number(orgIdParam)
+            if (!Number.isNaN(parsedOrgId) && parsedOrgId > 0) {
+                setOrgId(parsedOrgId)
             }
         }
 
@@ -307,14 +328,25 @@ export default function AssessmentEnginePage() {
             if (assessmentId) {
                 try {
                     const userId = parseInt(localStorage.getItem('userId') || '1', 10)
-                    await saveReview(
+                    const saveResponse = await saveReview(
                         assessmentId,
                         userId,
                         actions,
                         response.coverage_report,
-                        courseId ?? undefined
+                        courseId ?? undefined,
+                        courseIds.length > 0 ? courseIds : undefined
                     )
                     setError(null) // Clear any previous errors
+
+                    const addedCount = saveResponse.created_task_ids?.length || 0
+                    const suffix = addedCount > 0 ? ` (${addedCount} course${addedCount > 1 ? 's' : ''})` : ''
+                    setSaveSuccessMessage(`Successfully questions added to the courses${suffix}. Redirecting...`)
+                    const redirectOrgId = orgId || parseInt(localStorage.getItem('orgId') || '0', 10)
+                    if (redirectOrgId > 0) {
+                        window.setTimeout(() => {
+                            router.push(`/school/admin/${redirectOrgId}#courses`)
+                        }, 1200)
+                    }
                 } catch (reviewSaveErr) {
                     console.warn('Failed to save review to database:', reviewSaveErr)
                     // Continue even if save fails - the review is still applied in memory
@@ -562,6 +594,29 @@ export default function AssessmentEnginePage() {
                                     onClick={() => closeSavePreview(true)}
                                 >
                                     OK, Save to DB
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {saveSuccessMessage && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                        <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
+                            <h3 className="text-xl font-semibold text-neutral-900">Saved</h3>
+                            <p className="mt-2 text-sm text-neutral-700">{saveSuccessMessage}</p>
+                            <div className="mt-5 flex justify-end">
+                                <button
+                                    type="button"
+                                    className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700"
+                                    onClick={() => {
+                                        const redirectOrgId = orgId || parseInt(localStorage.getItem('orgId') || '0', 10)
+                                        if (redirectOrgId > 0) {
+                                            router.push(`/school/admin/${redirectOrgId}#courses`)
+                                        }
+                                    }}
+                                >
+                                    Go to courses
                                 </button>
                             </div>
                         </div>
