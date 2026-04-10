@@ -8,8 +8,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useSchools } from "@/lib/api";
 import CreateCourseDialog from "@/components/CreateCourseDialog";
 import SchoolPickerDialog from "@/components/SchoolPickerDialog";
-import { ChevronDown, Plus, X, Book, School } from "lucide-react";
-import { Cohort } from "@/types";
+import { Plus, X, Book, School, ClipboardCheck } from "lucide-react";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
 interface HeaderProps {
@@ -32,7 +31,7 @@ export function Header({
     const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
     const profileMenuRef = useRef<HTMLDivElement>(null);
     const mobileActionsRef = useRef<HTMLDivElement>(null);
-    const { schools, isLoading } = useSchools();
+    const { schools } = useSchools();
 
     // Check if user has a school they own (role admin)
     const hasOwnedSchool = Boolean(schools && schools.length > 0 &&
@@ -76,7 +75,7 @@ export function Header({
     };
 
     // Handle button click based on school ownership
-    const handleButtonClick = (e: React.MouseEvent) => {
+    const handleButtonClick = () => {
         // If no schools, redirect to school creation
         if (!schools || schools.length === 0) {
             router.push("/school/admin/create");
@@ -128,6 +127,11 @@ export function Header({
     // Add handler for "Try a demo" button click
     const handleTryDemoClick = () => {
         window.open("https://sensai.hyperverge.org/school/first-principles/join?cohortId=89", "_blank");
+        setMobileActionsOpen(false);
+    };
+
+    const handleAssessmentEngineClick = () => {
+        router.push("/assessment-engine");
         setMobileActionsOpen(false);
     };
 
@@ -186,22 +190,29 @@ export function Header({
 
                 {/* Right side actions */}
                 <div className="flex items-center space-x-4 pr-1">
-                        {showTryDemoButton && (
-                            <button
-                                onClick={handleTryDemoClick}
+                    {showTryDemoButton && (
+                        <button
+                            onClick={handleTryDemoClick}
                             className="hidden md:block px-6 py-3 text-sm font-medium rounded-full cursor-pointer bg-black/10 dark:bg-white/20 text-black dark:text-white hover:bg-black/20 dark:hover:bg-white/30"
-                            >
-                                Try a demo
-                            </button>
-                        )}
-                        {showCreateCourseButton && (
-                            <button
-                                onClick={handleButtonClick}
+                        >
+                            Try a demo
+                        </button>
+                    )}
+                    {showCreateCourseButton && (
+                        <button
+                            onClick={handleButtonClick}
                             className="hidden md:block px-6 py-3 text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer bg-[#d1d5db] dark:bg-white text-[#1f2937] dark:text-black"
-                            >
-                                {getButtonText()}
-                            </button>
-                        )}
+                        >
+                            {getButtonText()}
+                        </button>
+                    )}
+                    <button
+                        onClick={handleAssessmentEngineClick}
+                        className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full cursor-pointer bg-black/10 dark:bg-white/20 text-black dark:text-white hover:bg-black/20 dark:hover:bg-white/30"
+                    >
+                        <ClipboardCheck className="h-4 w-4" />
+                        Assessment engine
+                    </button>
 
                     {/* Profile dropdown */}
                     <div className="relative" ref={profileMenuRef}>
@@ -235,33 +246,30 @@ export function Header({
                                             <button
                                                 type="button"
                                                 onClick={() => setThemePreference('light')}
-                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${
-                                                    themePreference === 'light'
+                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${themePreference === 'light'
                                                         ? 'bg-white text-[#000000]'
                                                         : 'text-[#374151] dark:text-gray-300 hover:text-[#000000] dark:hover:text-white'
-                                                }`}
+                                                    }`}
                                             >
                                                 Light
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setThemePreference('dark')}
-                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${
-                                                    themePreference === 'dark'
+                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${themePreference === 'dark'
                                                         ? 'bg-white text-[#000000]'
                                                         : 'text-[#374151] dark:text-gray-300 hover:text-[#000000] dark:hover:text-white'
-                                                }`}
+                                                    }`}
                                             >
                                                 Dark
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setThemePreference('device')}
-                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${
-                                                    themePreference === 'device'
+                                                className={`flex-1 px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${themePreference === 'device'
                                                         ? 'bg-white text-[#000000]'
                                                         : 'text-[#374151] dark:text-gray-300 hover:text-[#000000] dark:hover:text-white'
-                                                }`}
+                                                    }`}
                                             >
                                                 Device
                                             </button>
@@ -350,6 +358,19 @@ export function Header({
                                     </div>
                                 )}
 
+                                <div className="flex items-center gap-3">
+                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                        Assessment engine
+                                    </span>
+                                    <button
+                                        onClick={handleAssessmentEngineClick}
+                                        className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
+                                        aria-label="Open assessment engine"
+                                    >
+                                        <ClipboardCheck className="h-6 w-6" />
+                                    </button>
+                                </div>
+
                                 {/* Go To School Button - only shown if hasOwnedSchool is true */}
                                 {hasOwnedSchool ? (
                                     <div className="flex items-center gap-3">
@@ -366,16 +387,16 @@ export function Header({
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-3">
-                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
-                                        Create a course
-                                    </span>
-                                    <button
-                                        onClick={handleCreateCourseButtonClick}
-                                        className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
-                                        aria-label="Create a course"
-                                    >
-                                        <Book className="h-6 w-6" />
-                                    </button>
+                                        <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                            Create a course
+                                        </span>
+                                        <button
+                                            onClick={handleCreateCourseButtonClick}
+                                            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
+                                            aria-label="Create a course"
+                                        >
+                                            <Book className="h-6 w-6" />
+                                        </button>
                                     </div>
                                 )}
                             </div>
