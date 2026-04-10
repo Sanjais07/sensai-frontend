@@ -67,17 +67,28 @@ function extractJdTopics(text: string): string[] {
 
 export default function LearnerAssessmentLauncher({ courses }: LearnerAssessmentLauncherProps) {
     const router = useRouter()
+    const [selectedCourseId, setSelectedCourseId] = useState<number | null>(courses[0]?.id ?? null)
     const [jdTitle, setJdTitle] = useState("Product Analyst")
     const [jdText, setJdText] = useState("")
 
     const extractedTopics = useMemo(() => extractJdTopics(jdText), [jdText])
 
-    const launchCurriculum = (courseName: string) => {
+    const launchCurriculum = () => {
+        if (!selectedCourseId) {
+            return
+        }
+
+        const selectedCourse = courses.find((course) => course.id === selectedCourseId)
+        if (!selectedCourse) {
+            return
+        }
+
         const query = new URLSearchParams({
             mode: "curriculum",
-            courseName,
+            courseId: String(selectedCourse.id),
+            courseName: selectedCourse.name,
             curriculumSkills: "Problem Solving, Conceptual Understanding",
-            modulesText: `${courseName}|Problem Solving;Conceptual Understanding`,
+            modulesText: `${selectedCourse.name}|Problem Solving;Conceptual Understanding`,
         })
 
         router.push(`/assessment-engine?${query.toString()}`)
@@ -98,9 +109,9 @@ export default function LearnerAssessmentLauncher({ courses }: LearnerAssessment
         <section className="mb-6 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-[#121212]">
             <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                    <h3 className="text-base font-medium text-black dark:text-white">Assessment Engine for Learners</h3>
+                    <h3 className="text-base font-medium text-black dark:text-white">Assessment Engine</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Launch assessments from enrolled cohort courses or from a job description.
+                        Launch assessments from existing courses or from a job description.
                     </p>
                 </div>
                 <Sparkles size={18} className="text-gray-500 dark:text-gray-400" />
@@ -110,28 +121,35 @@ export default function LearnerAssessmentLauncher({ courses }: LearnerAssessment
                 <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
                     <div className="mb-2 flex items-center gap-2 text-sm font-medium text-black dark:text-white">
                         <FileText size={16} />
-                        Curriculum based (from enrolled courses)
+                        Curriculum based
                     </div>
                     <div className="space-y-2">
                         {courses.length === 0 ? (
-                            <p className="text-sm text-gray-600 dark:text-gray-400">No enrolled courses linked to this cohort yet.</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">No courses available yet.</p>
                         ) : (
-                            courses.map((course) => (
-                                <div
-                                    key={course.id}
-                                    className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-sm dark:bg-[#1e1e1e]"
+                            <>
+                                <select
+                                    value={selectedCourseId ?? ""}
+                                    onChange={(e) => setSelectedCourseId(Number(e.target.value))}
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#0f0f0f]"
                                 >
-                                    <span className="truncate pr-3">{course.name}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => launchCurriculum(course.name)}
-                                        className="inline-flex items-center gap-1 rounded-full border border-gray-300 px-3 py-1 text-xs hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-[#2a2a2a]"
-                                    >
-                                        Use course
-                                        <ArrowRight size={12} />
-                                    </button>
-                                </div>
-                            ))
+                                    {courses.map((course) => (
+                                        <option key={course.id} value={course.id}>
+                                            {course.name}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                <button
+                                    type="button"
+                                    onClick={launchCurriculum}
+                                    disabled={!selectedCourseId}
+                                    className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-4 py-2 text-xs font-medium hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:hover:bg-[#2a2a2a]"
+                                >
+                                    Generate from curriculum
+                                    <ArrowRight size={12} />
+                                </button>
+                            </>
                         )}
                     </div>
                 </div>

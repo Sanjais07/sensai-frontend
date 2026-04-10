@@ -15,7 +15,6 @@ import CohortDashboard from "@/components/CohortDashboard";
 import CohortCoursesLinkerDropdown from "@/components/CohortCoursesLinkerDropdown";
 import SettingsDialog from "@/components/SettingsDialog";
 import CreateBatchDialog from "@/components/CreateBatchDialog";
-import LearnerAssessmentLauncher from "@/components/LearnerAssessmentLauncher";
 import { CohortWithDetails as Cohort } from "@/types";
 import { DripConfig } from "@/types/course";
 
@@ -910,7 +909,6 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
                         {tab === 'learners' && (
                             <>
-                                <LearnerAssessmentLauncher courses={cohort?.courses || []} />
                                 <CohortMemberManagement
                                     cohort={cohort}
                                     role="learner"

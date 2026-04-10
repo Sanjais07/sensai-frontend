@@ -13,6 +13,7 @@ import CreateCohortDialog from "@/components/CreateCohortDialog";
 import CreateCourseDialog from '@/components/CreateCourseDialog';
 import Toast from "@/components/Toast";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
+import LearnerAssessmentLauncher from "@/components/LearnerAssessmentLauncher";
 import { Cohort, TeamMember, Course } from "@/types";
 import { useThemePreference } from "@/lib/hooks/useThemePreference";
 
@@ -557,8 +558,8 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                             <div className="flex border-b border-gray-200 dark:border-gray-800">
                                 <button
                                     className={`px-4 py-2 font-light cursor-pointer ${activeTab === 'courses'
-                                            ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
-                                            : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                                        ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
                                         }`}
                                     onClick={() => handleTabChange('courses')}
                                 >
@@ -569,8 +570,8 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                 </button>
                                 <button
                                     className={`px-4 py-2 font-light cursor-pointer ${activeTab === 'cohorts'
-                                            ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
-                                            : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                                        ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
                                         }`}
                                     onClick={() => handleTabChange('cohorts')}
                                 >
@@ -581,8 +582,8 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                 </button>
                                 <button
                                     className={`px-4 py-2 font-light cursor-pointer ${activeTab === 'members'
-                                            ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
-                                            : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                                        ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
                                         }`}
                                     onClick={() => handleTabChange('members')}
                                 >
@@ -599,6 +600,13 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                             {/* Courses Tab */}
                             {activeTab === 'courses' && (
                                 <div>
+                                    <LearnerAssessmentLauncher
+                                        courses={(school.courses || []).map((course) => ({
+                                            id: Number(course.id),
+                                            name: course.name,
+                                        }))}
+                                    />
+
                                     {school.courses.length > 0 ? (
                                         <>
                                             <div className="flex justify-start items-center mb-6">
@@ -743,8 +751,8 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-300">{member.email}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm flex justify-between items-center">
                                                             <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium ${member.role === 'owner'
-                                                                    ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200'
-                                                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                                                                ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200'
+                                                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                                                                 }`}>
                                                                 {member.role === 'owner' ? 'Owner' : 'Admin'}
                                                             </span>

@@ -151,13 +151,15 @@ export async function saveReview(
     assessmentId: number,
     userId: number,
     reviewActions: ReviewAction[],
-    coverageReport: CoverageReport
+    coverageReport: CoverageReport,
+    courseId?: number
 ): Promise<{ review_id: number; assessment_id: number; message: string }> {
     return request<{ review_id: number; assessment_id: number; message: string }>(`/assessments/${assessmentId}/save-review`, {
         assessment_id: assessmentId,
         user_id: userId,
         review_actions: reviewActions,
         coverage_report: coverageReport,
+        course_id: courseId,
     })
 }
 

@@ -56,6 +56,7 @@ export default function AssessmentEnginePage() {
 
     const [assessment, setAssessment] = useState<Assessment | null>(null)
     const [assessmentId, setAssessmentId] = useState<number | null>(null)
+    const [courseId, setCourseId] = useState<number | null>(null)
     const [coverageReport, setCoverageReport] = useState<CoverageReport | null>(null)
     const [reviewState, setReviewState] = useState<Record<string, PendingReviewState>>({})
     const [savePreview, setSavePreview] = useState<SavePreviewState | null>(null)
@@ -63,6 +64,7 @@ export default function AssessmentEnginePage() {
 
     useEffect(() => {
         const modeParam = searchParams.get('mode')
+        const courseIdParam = searchParams.get('courseId')
         const courseNameParam = searchParams.get('courseName')
         const curriculumSkillsParam = searchParams.get('curriculumSkills')
         const modulesTextParam = searchParams.get('modulesText')
@@ -72,6 +74,13 @@ export default function AssessmentEnginePage() {
 
         if (modeParam === 'curriculum' || modeParam === 'jd') {
             setMode(modeParam)
+        }
+
+        if (courseIdParam) {
+            const parsedCourseId = Number(courseIdParam)
+            if (!Number.isNaN(parsedCourseId)) {
+                setCourseId(parsedCourseId)
+            }
         }
 
         if (courseNameParam) {
@@ -302,7 +311,8 @@ export default function AssessmentEnginePage() {
                         assessmentId,
                         userId,
                         actions,
-                        response.coverage_report
+                        response.coverage_report,
+                        courseId ?? undefined
                     )
                     setError(null) // Clear any previous errors
                 } catch (reviewSaveErr) {
