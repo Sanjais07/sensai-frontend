@@ -105,6 +105,24 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
     // Determine if this is a coding question
     const isCodingQuestion = currentQuestionConfig?.inputType === 'code';
+    const isObjectiveQuestion = currentQuestionConfig?.questionType === 'objective';
+
+    const objectiveOptions: string[] = Array.isArray(currentQuestionConfig?.settings?.options)
+        ? currentQuestionConfig.settings.options
+            .map((option: unknown) => {
+                if (typeof option === 'string') {
+                    return option.trim();
+                }
+                if (option && typeof option === 'object') {
+                    const candidate = option as { label?: string; text?: string; value?: string };
+                    return String(candidate.label || candidate.text || candidate.value || '').trim();
+                }
+                return '';
+            })
+            .filter((option: string) => Boolean(option))
+        : [];
+
+    const hasObjectiveOptions = isObjectiveQuestion && objectiveOptions.length > 0;
 
     // Get coding languages from question config
     const codingLanguages = currentQuestionConfig?.codingLanguages || ['javascript'];
@@ -448,6 +466,18 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
         }
     };
 
+    const handleObjectiveOptionSelect = (optionValue: string) => {
+        if (isSubmitting || isAiResponding) {
+            return;
+        }
+
+        handleInputChange({
+            target: { value: optionValue }
+        } as React.ChangeEvent<HTMLTextAreaElement>);
+
+        handleSubmitAnswer('text');
+    };
+
     // Save code functionality
     const saveCode = async ({ showToast }: { showToast: boolean }) => {
         if (!codeEditorRef.current || !currentQuestionId || isSaving) {
@@ -663,6 +693,22 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                 onAudioSubmit={handleAudioSubmit}
                                                 isSubmitting={isSubmitting || isAiResponding}
                                             />
+                                        </div>
+                                    ) : hasObjectiveOptions ? (
+                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                            {objectiveOptions.map((option, index) => (
+                                                <button
+                                                    key={`${index}-${option}`}
+                                                    type="button"
+                                                    className={`rounded-xl border px-4 py-3 text-left text-sm transition-colors ${currentAnswer === option
+                                                        ? 'border-blue-500 bg-blue-50 text-blue-900 dark:border-blue-400 dark:bg-blue-900/20 dark:text-blue-100'
+                                                        : 'border-gray-300 bg-white text-slate-900 hover:bg-gray-50 dark:border-[#2A2A2A] dark:bg-[#171717] dark:text-white dark:hover:bg-[#202020]'} ${isSubmitting || isAiResponding ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                                                    onClick={() => handleObjectiveOptionSelect(option)}
+                                                    disabled={isSubmitting || isAiResponding}
+                                                >
+                                                    {option}
+                                                </button>
+                                            ))}
                                         </div>
                                     ) : (
                                         /* Hide the text input for coding questions in exam mode */
@@ -939,14 +985,14 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving}
-                            className={`px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors flex items-center ${isSaving ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
+                                className={`px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors flex items-center ${isSaving ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
                                 {isSaving ? (
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                                 ) : (
                                     <Save size={16} className="mr-2" />
                                 )}
-                            <span>{isSaving ? 'Saving...' : 'Save'}</span>
+                                <span>{isSaving ? 'Saving...' : 'Save'}</span>
                             </button>
                         )}
 

@@ -313,10 +313,10 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 }
                             }
 
-                            const settings = { allowCopyPaste: true };
-                            if (question.settings) {
-                                settings.allowCopyPaste = question.settings.allowCopyPaste;
-                            }
+                            const settings = {
+                                allowCopyPaste: true,
+                                ...(question.settings || {}),
+                            };
 
                             return {
                                 id: String(question.id),
@@ -646,7 +646,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     // Navigate to the question with the problematic scorecard first
                     setCurrentQuestionIndex(i);
                     updateCurrentQuestionId(question.id);
-                    
+
                     // Use the shared validation function for scorecards
                     const isValid = validateScorecardCriteriaUtil(
                         question.config.scorecardData,
@@ -719,7 +719,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     // Integration logic for questions
     const currentIntegrationType = 'notion';
     const integrationBlock = currentQuestionContent.find(block => block.type === currentIntegrationType);
-    
+
     const initialContent = integrationBlock ? undefined : currentQuestionContent;
 
     // Handle integration blocks and editor instance clearing
@@ -1690,7 +1690,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             if (allowCopyPaste !== undefined) {
                 const copyPasteOption = copyPasteControlOptions.find(opt => opt.value === allowCopyPaste.toString());
                 if (copyPasteOption) {
-                setSelectedCopyPasteControl(copyPasteOption);
+                    setSelectedCopyPasteControl(copyPasteOption);
                 } else {
                     setSelectedCopyPasteControl(copyPasteControlOptions[1]);
                 }
@@ -1861,14 +1861,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 <div className="flex items-center flex-1 min-w-0">
                                                     <div className="flex-1 min-w-0">
                                                         <div
-                                                            className={`text-sm break-words whitespace-normal ${index === currentQuestionIndex 
-                                                                ? "text-black dark:text-white" 
+                                                            className={`text-sm break-words whitespace-normal ${index === currentQuestionIndex
+                                                                ? "text-black dark:text-white"
                                                                 : "text-gray-700 dark:text-gray-300"}`}
                                                             data-testid="sidebar-question-label"
                                                         >
                                                             {question.config.title || `Question ${index + 1}`}
                                                         </div>
-                                                        <div className={`text-xs truncate ${index === currentQuestionIndex 
+                                                        <div className={`text-xs truncate ${index === currentQuestionIndex
                                                             ? "text-gray-600 dark:text-gray-300"
                                                             : "text-gray-500"
                                                             }`}>
@@ -2064,7 +2064,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                     ) : integrationBlocks.length > 0 ? (
                                                         <div className="px-16 pb-6 rounded-lg bg-white text-black dark:bg-[#191919] dark:text-white">
                                                             <h1 className="text-4xl font-bold mb-4 pl-0.5 text-black dark:text-white">{integrationBlock?.props?.resource_name}</h1>
-                                                            <RenderConfig theme={isDarkMode ? "dark" : "light"}>       
+                                                            <RenderConfig theme={isDarkMode ? "dark" : "light"}>
                                                                 <BlockList blocks={integrationBlocks} />
                                                             </RenderConfig>
                                                         </div>
@@ -2117,43 +2117,43 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 </div>
                                             </div>
                                         ) : activeEditorTab === 'knowledge' ? (
-                                                            <KnowledgeBaseEditor
-                                                                knowledgeBaseBlocks={currentQuestionConfig.knowledgeBaseBlocks || []}
-                                                                linkedMaterialIds={currentQuestionConfig.linkedMaterialIds || []}
-                                                                courseId={courseId}
-                                                                readOnly={readOnly}
-                                                                onKnowledgeBaseChange={(knowledgeBaseBlocks) => {
-                                                                    // Update the question config with the new knowledge base blocks
-                                                                    const updatedQuestions = [...questions];
-                                                                    updatedQuestions[currentQuestionIndex] = {
-                                                                        ...updatedQuestions[currentQuestionIndex],
-                                                                        config: {
-                                                                            ...updatedQuestions[currentQuestionIndex].config,
-                                                                            knowledgeBaseBlocks: knowledgeBaseBlocks
-                                                                        }
-                                                                    };
-                                                                    setQuestions(updatedQuestions);
-                                                                    if (onChange) {
-                                                                        onChange(updatedQuestions);
-                                                                    }
-                                                                }}
-                                                                onLinkedMaterialsChange={(linkedMaterialIds) => {
-                                                                    // Update the question config with the new linked material IDs
-                                                                    const updatedQuestions = [...questions];
-                                                                    updatedQuestions[currentQuestionIndex] = {
-                                                                        ...updatedQuestions[currentQuestionIndex],
-                                                                        config: {
-                                                                            ...updatedQuestions[currentQuestionIndex].config,
-                                                                            linkedMaterialIds: linkedMaterialIds
-                                                                        }
-                                                                    };
-                                                                    setQuestions(updatedQuestions);
-                                                                    if (onChange) {
-                                                                        onChange(updatedQuestions);
-                                                                    }
-                                                                }}
-                                                                className="question"
-                                                            />
+                                            <KnowledgeBaseEditor
+                                                knowledgeBaseBlocks={currentQuestionConfig.knowledgeBaseBlocks || []}
+                                                linkedMaterialIds={currentQuestionConfig.linkedMaterialIds || []}
+                                                courseId={courseId}
+                                                readOnly={readOnly}
+                                                onKnowledgeBaseChange={(knowledgeBaseBlocks) => {
+                                                    // Update the question config with the new knowledge base blocks
+                                                    const updatedQuestions = [...questions];
+                                                    updatedQuestions[currentQuestionIndex] = {
+                                                        ...updatedQuestions[currentQuestionIndex],
+                                                        config: {
+                                                            ...updatedQuestions[currentQuestionIndex].config,
+                                                            knowledgeBaseBlocks: knowledgeBaseBlocks
+                                                        }
+                                                    };
+                                                    setQuestions(updatedQuestions);
+                                                    if (onChange) {
+                                                        onChange(updatedQuestions);
+                                                    }
+                                                }}
+                                                onLinkedMaterialsChange={(linkedMaterialIds) => {
+                                                    // Update the question config with the new linked material IDs
+                                                    const updatedQuestions = [...questions];
+                                                    updatedQuestions[currentQuestionIndex] = {
+                                                        ...updatedQuestions[currentQuestionIndex],
+                                                        config: {
+                                                            ...updatedQuestions[currentQuestionIndex].config,
+                                                            linkedMaterialIds: linkedMaterialIds
+                                                        }
+                                                    };
+                                                    setQuestions(updatedQuestions);
+                                                    if (onChange) {
+                                                        onChange(updatedQuestions);
+                                                    }
+                                                }}
+                                                className="question"
+                                            />
                                         ) : (
                                             // Scorecard tab - use ScorecardManager component
                                             <div className="h-full w-full bg-white dark:bg-transparent">
