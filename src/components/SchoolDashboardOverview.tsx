@@ -91,10 +91,10 @@ export default function SchoolDashboardOverview({
         label: string;
         icon: typeof BookOpen;
     }> = [
-        { key: "courses", label: "Courses", icon: BookOpen },
-        { key: "cohorts", label: "Cohorts", icon: Layers3 },
-        { key: "members", label: "Team", icon: Users },
-    ];
+            { key: "courses", label: "Courses", icon: BookOpen },
+            { key: "cohorts", label: "Cohorts", icon: Layers3 },
+            { key: "members", label: "Team", icon: Users },
+        ];
 
     const activityLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 

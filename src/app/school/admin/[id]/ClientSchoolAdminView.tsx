@@ -246,7 +246,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
 
         } catch (error) {
             console.error('Error inviting members:', error);
-            
+
             // Show error toast
             let errorMessage = 'Failed to invite members. Please try again.';
             if (error instanceof Error && error.message && error.message !== 'Invalid JSON') {
@@ -563,11 +563,10 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                         <div className="mb-8">
                             <div className="flex border-b border-gray-200 dark:border-gray-800">
                                 <button
-                                    className={`px-4 py-2 font-light cursor-pointer ${
-                                        activeTab === 'courses'
+                                    className={`px-4 py-2 font-light cursor-pointer ${activeTab === 'courses'
                                             ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                                    }`}
+                                        }`}
                                     onClick={() => handleTabChange('courses')}
                                 >
                                     <div className="flex items-center">
@@ -576,11 +575,10 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                     </div>
                                 </button>
                                 <button
-                                    className={`px-4 py-2 font-light cursor-pointer ${
-                                        activeTab === 'cohorts'
+                                    className={`px-4 py-2 font-light cursor-pointer ${activeTab === 'cohorts'
                                             ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                                    }`}
+                                        }`}
                                     onClick={() => handleTabChange('cohorts')}
                                 >
                                     <div className="flex items-center">
@@ -589,11 +587,10 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                     </div>
                                 </button>
                                 <button
-                                    className={`px-4 py-2 font-light cursor-pointer ${
-                                        activeTab === 'members'
+                                    className={`px-4 py-2 font-light cursor-pointer ${activeTab === 'members'
                                             ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                                    }`}
+                                        }`}
                                     onClick={() => handleTabChange('members')}
                                 >
                                     <div className="flex items-center">
@@ -765,11 +762,10 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-300">{member.email}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm flex justify-between items-center">
-                                                            <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium ${
-                                                                member.role === 'owner'
+                                                            <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium ${member.role === 'owner'
                                                                     ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200'
                                                                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                                                            }`}>
+                                                                }`}>
                                                                 {member.role === 'owner' ? 'Owner' : 'Admin'}
                                                             </span>
                                                             {member.role !== 'owner' && !isCurrentUser(member) && (

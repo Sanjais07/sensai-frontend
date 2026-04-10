@@ -561,7 +561,7 @@ export default function ClientSchoolMemberView({ slug }: { slug: string }) {
                                                                 taskId={taskId}
                                                                 questionId={questionId}
                                                                 onUpdateTaskAndQuestionIdInUrl={
-                                                                    (taskId, questionId) => 
+                                                                    (taskId, questionId) =>
                                                                         updateTaskAndQuestionIdInUrl(router, taskId, questionId)
                                                                 }
                                                             />
