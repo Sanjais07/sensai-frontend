@@ -1329,6 +1329,148 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         return scorecardManagerRef.current?.hasUnsavedScorecardChanges() ?? false;
     }, []);
 
+    const autoAssignMissingScorecards = useCallback(async (): Promise<{ assignedCount: number; missingCount: number }> => {
+        const missing = questions.filter(
+            (q) => q.config.questionType === 'subjective' && !validateScorecard(q.config)
+        );
+
+        if (missing.length === 0) {
+            return { assignedCount: 0, missingCount: 0 };
+        }
+
+        if (!schoolScorecards.length || !schoolId) {
+            return { assignedCount: 0, missingCount: missing.length };
+        }
+
+        let assignedCount = 0;
+
+        const normalizeScorecard = (scorecard: ScorecardTemplate | undefined, questionTitle: string): ScorecardTemplate => {
+            const safeTitle = (questionTitle || 'AI Scorecard').trim();
+
+            const fallbackCriteria = [
+                {
+                    name: 'Conceptual Understanding',
+                    description: 'Demonstrates clear understanding of the core concept and applies it correctly.',
+                    maxScore: 4,
+                    minScore: 0,
+                    passScore: 2,
+                },
+                {
+                    name: 'Reasoning Quality',
+                    description: 'Provides logical and well-structured reasoning with relevant justification.',
+                    maxScore: 3,
+                    minScore: 0,
+                    passScore: 2,
+                },
+                {
+                    name: 'Clarity and Completeness',
+                    description: 'Response is clear, complete, and addresses all key parts of the question.',
+                    maxScore: 3,
+                    minScore: 0,
+                    passScore: 2,
+                },
+            ];
+
+            if (!scorecard || !Array.isArray(scorecard.criteria) || scorecard.criteria.length === 0) {
+                return {
+                    id: `auto-scorecard-${safeTitle.toLowerCase().replace(/\s+/g, '-')}`,
+                    name: `${safeTitle} - Auto Scorecard`,
+                    criteria: fallbackCriteria,
+                    is_template: false,
+                    new: true,
+                };
+            }
+
+            const sanitizedCriteria = scorecard.criteria.map((criterion, index) => ({
+                ...criterion,
+                name: criterion.name?.trim() ? criterion.name : `Parameter ${index + 1}`,
+                description: criterion.description?.trim()
+                    ? criterion.description
+                    : `Evaluation details for ${criterion.name?.trim() || `parameter ${index + 1}`}.`,
+            }));
+
+            return {
+                ...scorecard,
+                name: scorecard.name?.trim() ? scorecard.name : `${safeTitle} - Auto Scorecard`,
+                criteria: sanitizedCriteria,
+            };
+        };
+
+        for (const question of missing) {
+            const questionText = extractTextFromBlocks(question.content || []).trim() || question.config.title || 'Assessment question';
+
+            try {
+                const recommendResponse = await fetch(
+                    `${process.env.NEXT_PUBLIC_BACKEND_URL}/scorecards/ai/recommend`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            question_text: questionText,
+                            question_title: question.config.title || 'Assessment question',
+                            scorecards: schoolScorecards,
+                        }),
+                    }
+                );
+
+                if (!recommendResponse.ok) {
+                    throw new Error(`AI recommend failed: ${recommendResponse.status}`);
+                }
+
+                const recommendation = await recommendResponse.json();
+                const picked = recommendation?.scorecard_data as ScorecardTemplate | undefined;
+                const fallback = schoolScorecards[0];
+                const selected = normalizeScorecard(
+                    picked && picked.criteria?.length ? picked : fallback,
+                    question.config.title || 'Assessment question'
+                );
+
+                if (!selected) {
+                    continue;
+                }
+
+                setQuestions((prev) =>
+                    prev.map((q) =>
+                        q.id === question.id
+                            ? {
+                                ...q,
+                                config: {
+                                    ...q.config,
+                                    scorecardData: selected,
+                                },
+                            }
+                            : q
+                    )
+                );
+                assignedCount += 1;
+            } catch {
+                const fallback = normalizeScorecard(
+                    schoolScorecards[0],
+                    question.config.title || 'Assessment question'
+                );
+
+                setQuestions((prev) =>
+                    prev.map((q) =>
+                        q.id === question.id
+                            ? {
+                                ...q,
+                                config: {
+                                    ...q.config,
+                                    scorecardData: fallback,
+                                },
+                            }
+                            : q
+                    )
+                );
+                assignedCount += 1;
+            }
+        }
+
+        return { assignedCount, missingCount: missing.length };
+    }, [questions, schoolScorecards, schoolId, validateScorecard]);
+
     // Expose methods to parent component via the ref
     useImperativeHandle(ref, () => ({
         saveDraft: () => updateDraftQuiz(null, 'draft'),
@@ -1422,7 +1564,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             return currentQuestionsStr !== originalQuestionsStr;
         },
         hasUnsavedScorecardChanges: () => scorecardManagerRef.current?.hasUnsavedScorecardChanges() ?? false,
-        handleScorecardChangesRevert: () => scorecardManagerRef.current?.handleScorecardChangesRevert()
+        handleScorecardChangesRevert: () => scorecardManagerRef.current?.handleScorecardChangesRevert(),
+        autoAssignMissingScorecards,
     }));
 
     // Update the MemoizedLearnerQuizView to include the correct answer

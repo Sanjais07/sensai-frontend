@@ -16,7 +16,7 @@ export interface QuizEditorHandle {
     validateBeforePublish: () => boolean;
     getCurrentQuestionConfig: () => QuizQuestionConfig | undefined;
     validateScorecardCriteria: (
-        scorecard: ScorecardTemplate | undefined, 
+        scorecard: ScorecardTemplate | undefined,
         callbacks: {
             setActiveTab: (tab: 'question' | 'answer' | 'scorecard' | 'knowledge') => void;
             showErrorMessage?: (title: string, message: string, emoji?: string) => void;
@@ -25,6 +25,7 @@ export interface QuizEditorHandle {
     ) => boolean;
     hasUnsavedScorecardChanges: () => boolean;
     handleScorecardChangesRevert: () => void;
+    autoAssignMissingScorecards: () => Promise<{ assignedCount: number; missingCount: number }>;
 }
 
 export interface QuizQuestionConfig {
@@ -123,7 +124,7 @@ export interface ChatMessage {
     is_correct?: boolean; // Add is_correct attribute for exam responses
     fileUuid?: string; // UUID for file messages
     fileName?: string; // Filename for file messages
-}   
+}
 
 
 // Define scorecard item structure

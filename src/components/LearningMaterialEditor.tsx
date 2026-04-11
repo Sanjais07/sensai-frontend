@@ -6,7 +6,6 @@ import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallba
 
 // Add import for date picker
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -546,21 +545,21 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black dark:border-white"></div>
                     </div>
                 ) : integrationError ? (
-                <div className="flex flex-col items-center justify-center h-32 text-center">
-                    <div className="text-red-400 text-sm mb-4">
-                        {integrationError}
+                    <div className="flex flex-col items-center justify-center h-32 text-center">
+                        <div className="text-red-400 text-sm mb-4">
+                            {integrationError}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                            The Notion integration may have been disconnected. Please reconnect it.
+                        </div>
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                        The Notion integration may have been disconnected. Please reconnect it.
-                    </div>
-                </div>
                 ) : integrationBlocks.length > 0 ? (
-                <div className="px-16 pb-6 rounded-lg h-full overflow-y-auto bg-white text-black dark:bg-[#191919] dark:text-white">
-                    <h1 className={`text-4xl font-bold mb-4 pl-0.5 ${readOnly ? 'mt-4' : ''} text-black dark:text-white`}>{integrationBlock?.props?.resource_name}</h1>
-                    <RenderConfig theme={isDarkMode ? "dark" : "light"}>
-                        <BlockList blocks={integrationBlocks} />
-                    </RenderConfig>
-                </div>
+                    <div className="px-16 pb-6 rounded-lg h-full overflow-y-auto bg-white text-black dark:bg-[#191919] dark:text-white">
+                        <h1 className={`text-4xl font-bold mb-4 pl-0.5 ${readOnly ? 'mt-4' : ''} text-black dark:text-white`}>{integrationBlock?.props?.resource_name}</h1>
+                        <RenderConfig theme={isDarkMode ? "dark" : "light"}>
+                            <BlockList blocks={integrationBlocks} />
+                        </RenderConfig>
+                    </div>
                 ) : integrationBlock ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center">
                         <div className="text-lg mb-2 text-black dark:text-white">Notion page is empty</div>

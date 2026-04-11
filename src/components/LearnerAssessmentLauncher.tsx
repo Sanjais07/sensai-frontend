@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowRight, FileText, Sparkles, Upload } from "lucide-react"
+import { ArrowRight, CheckCircle2, FileText, Sparkles, Upload, Loader } from "lucide-react"
 
 interface CourseLite {
     id: number
@@ -18,12 +18,15 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
     const router = useRouter()
     const [availableCourses, setAvailableCourses] = useState<CourseLite[]>(courses)
     const [selectedCourseId, setSelectedCourseId] = useState<number | null>(courses[0]?.id ?? null)
+    const [activeMode, setActiveMode] = useState<"curriculum" | "jd">("curriculum")
     const [jdTitle, setJdTitle] = useState("")
     const [jdText, setJdText] = useState("")
     const [jdFileName, setJdFileName] = useState("")
+    const [isDragOver, setIsDragOver] = useState(false)
     const [extractedTopics, setExtractedTopics] = useState<string[]>([])
     const [isExtractingTopics, setIsExtractingTopics] = useState(false)
     const [isLaunchingJd, setIsLaunchingJd] = useState(false)
+    const [isLaunchingCurriculum, setIsLaunchingCurriculum] = useState(false)
     const [jdError, setJdError] = useState<string | null>(null)
 
     const launchCurriculum = () => {
@@ -36,6 +39,8 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
             return
         }
 
+        setIsLaunchingCurriculum(true)
+
         const query = new URLSearchParams({
             mode: "curriculum",
             lockMode: "1",
@@ -46,7 +51,9 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
             modulesText: `${selectedCourse.name}|Problem Solving;Conceptual Understanding`,
         })
 
-        router.push(`/assessment-engine?${query.toString()}`)
+        setTimeout(() => {
+            router.push(`/assessment-engine?${query.toString()}`)
+        }, 500)
     }
 
     const extractTopicsFromFile = async (file: File) => {
@@ -181,120 +188,236 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
                 jdSkills: extractedTopics.join(", "),
             })
 
-            router.push(`/assessment-engine?${query.toString()}`)
+            setTimeout(() => {
+                router.push(`/assessment-engine?${query.toString()}`)
+            }, 500)
         } catch (error) {
             const message = error instanceof Error ? error.message : "Unable to launch JD flow"
             setJdError(message)
-        } finally {
             setIsLaunchingJd(false)
         }
     }
 
     return (
-        <section className="mb-6 overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-br from-white via-gray-50 to-white p-5 shadow-sm dark:border-gray-800 dark:from-[#121212] dark:via-[#101218] dark:to-[#121212]">
-            <div className="mb-5 flex items-start justify-between gap-4">
-                <div>
-                    <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-600 dark:border-gray-700 dark:bg-[#171717] dark:text-gray-300">
-                        AI Powered
+        <>
+            {(isLaunchingCurriculum || isLaunchingJd) && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl dark:bg-black/40">
+                        <Loader size={32} className="animate-spin text-white" />
+                        <p className="text-center text-sm font-medium text-white">
+                            {isLaunchingCurriculum ? "Preparing curriculum-based assessment..." : "Preparing JD-based assessment..."}
+                        </p>
+                        <p className="text-center text-xs text-white/70">This may take a moment</p>
                     </div>
-                    <h3 className="text-lg font-semibold text-black dark:text-white">Assessment Engine</h3>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        Generate assessments from course curriculum or an uploaded job description.
-                    </p>
                 </div>
-                <div className="rounded-xl border border-gray-200 bg-white p-2.5 dark:border-gray-700 dark:bg-[#171717]">
-                    <Sparkles size={18} className="text-gray-500 dark:text-gray-300" />
-                </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-[#0f0f0f]">
-                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-black dark:text-white">
-                        <FileText size={16} />
-                        Curriculum based
+            )}
+            <section className="mb-6 overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-br from-white via-gray-50 to-white p-5 shadow-sm dark:border-gray-800 dark:from-[#121212] dark:via-[#101218] dark:to-[#121212]">
+                <div className="mb-5 flex items-start justify-between gap-4">
+                    <div>
+                        <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-600 dark:border-gray-700 dark:bg-[#171717] dark:text-gray-300">
+                            AI Powered
+                        </div>
+                        <h3 className="text-lg font-semibold text-black dark:text-white">Assessment Engine</h3>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            Generate assessments from course curriculum or an uploaded job description.
+                        </p>
                     </div>
-                    <div className="space-y-3">
-                        {availableCourses.length === 0 ? (
-                            <p className="text-sm text-gray-600 dark:text-gray-400">No courses available yet.</p>
-                        ) : (
-                            <>
-                                <select
-                                    value={selectedCourseId ?? ""}
-                                    onChange={(e) => setSelectedCourseId(Number(e.target.value))}
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-400 dark:border-gray-700 dark:bg-[#121212] dark:focus:border-gray-500"
-                                >
-                                    {availableCourses.map((course) => (
-                                        <option key={course.id} value={course.id}>
-                                            {course.name}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                <button
-                                    type="button"
-                                    onClick={launchCurriculum}
-                                    disabled={!selectedCourseId}
-                                    className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-900 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-[#171717] dark:text-white dark:hover:bg-[#232323]"
-                                >
-                                    Generate from curriculum
-                                    <ArrowRight size={12} />
-                                </button>
-                            </>
-                        )}
+                    <div className="rounded-xl border border-gray-200 bg-white p-2.5 dark:border-gray-700 dark:bg-[#171717]">
+                        <Sparkles size={18} className="text-gray-500 dark:text-gray-300" />
                     </div>
                 </div>
 
-                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-[#0f0f0f]">
-                    <div className="mb-3 text-sm font-semibold text-black dark:text-white">JD based (topic extraction)</div>
-                    <div className="space-y-3">
-                        <input
-                            value={jdTitle}
-                            onChange={(e) => setJdTitle(e.target.value)}
-                            placeholder="Role title (auto-filled from JD upload)"
-                            disabled={!jdText.trim()}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-400 disabled:cursor-not-allowed disabled:opacity-70 dark:border-gray-700 dark:bg-[#121212] dark:focus:border-gray-500"
-                        />
+                <div className="mb-5 grid gap-2 sm:grid-cols-3">
+                    <div className="rounded-xl border border-gray-200/80 bg-white/70 px-3 py-2 dark:border-gray-700 dark:bg-[#161616]">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Courses ready</p>
+                        <p className="mt-1 text-sm font-semibold text-black dark:text-white">{availableCourses.length}</p>
+                    </div>
+                    <div className="rounded-xl border border-gray-200/80 bg-white/70 px-3 py-2 dark:border-gray-700 dark:bg-[#161616]">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">JD status</p>
+                        <p className="mt-1 text-sm font-semibold text-black dark:text-white">{jdFileName ? "Uploaded" : "Not uploaded"}</p>
+                    </div>
+                    <div className="rounded-xl border border-gray-200/80 bg-white/70 px-3 py-2 dark:border-gray-700 dark:bg-[#161616]">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Topic extraction</p>
+                        <p className="mt-1 text-sm font-semibold text-black dark:text-white">{extractedTopics.length ? "Ready" : "Pending"}</p>
+                    </div>
+                </div>
 
-                        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-4 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-gray-600 dark:bg-[#131313] dark:text-gray-200 dark:hover:bg-[#1a1a1a]">
-                            <Upload size={15} />
-                            <span className="truncate">{jdFileName || "Upload JD (PDF or Word)"}</span>
+                <div className="mb-4 inline-flex rounded-full border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-[#171717]">
+                    <button
+                        type="button"
+                        onClick={() => setActiveMode("curriculum")}
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${activeMode === "curriculum"
+                            ? "bg-black text-white dark:bg-white dark:text-black"
+                            : "text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white"
+                            }`}
+                    >
+                        Curriculum Mode
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveMode("jd")}
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${activeMode === "jd"
+                            ? "bg-black text-white dark:bg-white dark:text-black"
+                            : "text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white"
+                            }`}
+                    >
+                        JD Mode
+                    </button>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <div className={`rounded-xl border bg-white p-4 shadow-sm transition dark:bg-[#0f0f0f] ${activeMode === "curriculum" ? "border-gray-900 dark:border-gray-300" : "border-gray-200 dark:border-gray-700"}`}>
+                        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-black dark:text-white">
+                            <FileText size={16} />
+                            Curriculum based
+                        </div>
+                        <div className="mb-3 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                            <CheckCircle2 size={13} className={selectedCourseId ? "text-green-600 dark:text-green-400" : "text-gray-400"} />
+                            {selectedCourseId ? "Course selected and ready" : "Select a course to continue"}
+                        </div>
+                        <div className="space-y-3">
+                            {availableCourses.length === 0 ? (
+                                <p className="text-sm text-gray-600 dark:text-gray-400">No courses available yet.</p>
+                            ) : (
+                                <>
+                                    <select
+                                        value={selectedCourseId ?? ""}
+                                        onChange={(e) => setSelectedCourseId(Number(e.target.value))}
+                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-400 dark:border-gray-700 dark:bg-[#121212] dark:focus:border-gray-500"
+                                    >
+                                        {availableCourses.map((course) => (
+                                            <option key={course.id} value={course.id}>
+                                                {course.name}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    <button
+                                        type="button"
+                                        onClick={launchCurriculum}
+                                        disabled={!selectedCourseId || isLaunchingCurriculum}
+                                        className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-900 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-[#171717] dark:text-white dark:hover:bg-[#232323]"
+                                    >
+                                        {isLaunchingCurriculum ? (
+                                            <>
+                                                <Loader size={12} className="animate-spin" />
+                                                Preparing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Generate from curriculum
+                                                <ArrowRight size={12} />
+                                            </>
+                                        )}
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className={`rounded-xl border bg-white p-4 shadow-sm transition dark:bg-[#0f0f0f] ${activeMode === "jd" ? "border-gray-900 dark:border-gray-300" : "border-gray-200 dark:border-gray-700"}`}>
+                        <div className="mb-3 text-sm font-semibold text-black dark:text-white">JD based (topic extraction)</div>
+                        <div className="mb-3 grid grid-cols-3 gap-2 text-[11px]">
+                            <div className={`rounded-md border px-2 py-1 text-center ${jdFileName ? "border-green-300 text-green-700 dark:border-green-700 dark:text-green-300" : "border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400"}`}>
+                                Upload
+                            </div>
+                            <div className={`rounded-md border px-2 py-1 text-center ${extractedTopics.length ? "border-green-300 text-green-700 dark:border-green-700 dark:text-green-300" : "border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400"}`}>
+                                Extract
+                            </div>
+                            <div className={`rounded-md border px-2 py-1 text-center ${jdText.trim() && extractedTopics.length ? "border-green-300 text-green-700 dark:border-green-700 dark:text-green-300" : "border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400"}`}>
+                                Generate
+                            </div>
+                        </div>
+                        <div className="space-y-3">
                             <input
-                                type="file"
-                                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                                className="hidden"
-                                onChange={(event) => {
-                                    const file = event.target.files?.[0]
+                                value={jdTitle}
+                                onChange={(e) => setJdTitle(e.target.value)}
+                                placeholder="Role title (auto-filled from JD upload)"
+                                disabled={!jdText.trim()}
+                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-400 disabled:cursor-not-allowed disabled:opacity-70 dark:border-gray-700 dark:bg-[#121212] dark:focus:border-gray-500"
+                            />
+
+                            <label
+                                onDragOver={(event) => {
+                                    event.preventDefault()
+                                    setIsDragOver(true)
+                                }}
+                                onDragLeave={() => setIsDragOver(false)}
+                                onDrop={(event) => {
+                                    event.preventDefault()
+                                    setIsDragOver(false)
+                                    const file = event.dataTransfer.files?.[0]
                                     if (file) {
                                         void extractTopicsFromFile(file)
                                     }
                                 }}
-                            />
-                        </label>
+                                className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-4 text-sm font-medium transition ${isDragOver
+                                    ? "border-gray-500 bg-gray-100 text-gray-900 dark:border-gray-400 dark:bg-[#202020] dark:text-white"
+                                    : "border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-[#131313] dark:text-gray-200 dark:hover:bg-[#1a1a1a]"
+                                    }`}
+                            >
+                                <Upload size={15} />
+                                <span className="truncate">{jdFileName || "Upload JD (PDF or Word) or drag & drop"}</span>
+                                <input
+                                    type="file"
+                                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                    className="hidden"
+                                    onChange={(event) => {
+                                        const file = event.target.files?.[0]
+                                        if (file) {
+                                            void extractTopicsFromFile(file)
+                                        }
+                                    }}
+                                />
+                            </label>
 
-                        {isExtractingTopics && (
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Extracting text and topics from JD file...</p>
-                        )}
+                            {isExtractingTopics && (
+                                <p className="text-xs text-gray-600 dark:text-gray-400">Extracting text and topics from JD file...</p>
+                            )}
 
-                        <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:border-gray-700 dark:bg-[#131313] dark:text-gray-400">
-                            Extracted topics (max 1): {extractedTopics.length ? extractedTopics.join(", ") : "Upload a JD file to extract topics"}
+                            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:border-gray-700 dark:bg-[#131313] dark:text-gray-400">
+                                Extracted topics (max 1): {extractedTopics.length ? extractedTopics.join(", ") : "Upload a JD file to extract topics"}
+                            </div>
+
+                            {extractedTopics.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                    {extractedTopics.map((topic) => (
+                                        <span
+                                            key={topic}
+                                            className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-700 dark:border-gray-700 dark:bg-[#181818] dark:text-gray-300"
+                                        >
+                                            {topic}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            {jdError && <p className="text-xs text-red-600 dark:text-red-400">{jdError}</p>}
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void launchJd()
+                                }}
+                                disabled={!jdText.trim() || extractedTopics.length === 0 || isExtractingTopics || isLaunchingJd}
+                                className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black"
+                            >
+                                {isLaunchingJd ? (
+                                    <>
+                                        <Loader size={12} className="animate-spin" />
+                                        Preparing...
+                                    </>
+                                ) : (
+                                    <>
+                                        Generate questions
+                                        <ArrowRight size={12} />
+                                    </>
+                                )}
+                            </button>
                         </div>
-
-                        {jdError && <p className="text-xs text-red-600 dark:text-red-400">{jdError}</p>}
-
-                        <button
-                            type="button"
-                            onClick={() => {
-                                void launchJd()
-                            }}
-                            disabled={!jdText.trim() || extractedTopics.length === 0 || isExtractingTopics || isLaunchingJd}
-                            className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black"
-                        >
-                            {isLaunchingJd ? "Preparing courses..." : "Generate questions"}
-                            <ArrowRight size={12} />
-                        </button>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        </>
     )
 }

@@ -1,6 +1,5 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { DripConfig } from "@/types/course";
 import Toast from './Toast';
 
@@ -15,7 +14,7 @@ export interface DripPublishingConfigRef {
 // Time units for frequency selection
 const TIME_UNITS = [
     'minute',
-    'hour', 
+    'hour',
     'day',
     'week',
     'month',

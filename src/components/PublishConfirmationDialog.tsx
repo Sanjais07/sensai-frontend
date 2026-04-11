@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import ConfirmationDialog from './ConfirmationDialog';
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 
 interface PublishConfirmationDialogProps {
     show: boolean;

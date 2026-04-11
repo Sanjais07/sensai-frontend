@@ -110,6 +110,7 @@ export default function AssessmentEnginePage() {
     const [isModeLocked, setIsModeLocked] = useState(false)
     const [targetLevel, setTargetLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate')
     const [isLoading, setIsLoading] = useState(false)
+    const [isGeneratingAssessment, setIsGeneratingAssessment] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     const [courseName, setCourseName] = useState('Data Structures')
@@ -358,6 +359,8 @@ export default function AssessmentEnginePage() {
     }
 
     const handleGenerate = async () => {
+        const generateStartTime = Date.now()
+        setIsGeneratingAssessment(true)
         setIsLoading(true)
         setError(null)
 
@@ -387,6 +390,12 @@ export default function AssessmentEnginePage() {
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to generate assessment')
         } finally {
+            const minOverlayMs = 3000
+            const elapsed = Date.now() - generateStartTime
+            if (elapsed < minOverlayMs) {
+                await new Promise((resolve) => setTimeout(resolve, minOverlayMs - elapsed))
+            }
+            setIsGeneratingAssessment(false)
             setIsLoading(false)
         }
     }
@@ -977,6 +986,16 @@ export default function AssessmentEnginePage() {
                     )}
                 </section>
 
+                {isGeneratingAssessment && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+                        <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 text-center shadow-2xl dark:border-[#2A2A2A] dark:bg-[#121212]">
+                            <div className="mx-auto mb-4 h-14 w-14 rounded-full border-4 border-neutral-200 border-t-neutral-700 animate-spin dark:border-[#2A2A2A] dark:border-t-gray-200" />
+                            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Generating questions...</h3>
+                            <p className="mt-2 text-sm text-neutral-600 dark:text-gray-300">Please wait a few seconds while we prepare your assessment.</p>
+                        </div>
+                    </div>
+                )}
+
                 {savePreview && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                         <div className="flex h-[85vh] w-[95vw] max-w-6xl flex-col rounded-xl bg-white shadow-2xl dark:bg-[#121212]">
@@ -1011,7 +1030,7 @@ export default function AssessmentEnginePage() {
                                     className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-gray-200"
                                     onClick={() => closeSavePreview(true)}
                                 >
-                                    OK, Save to DB
+                                    Done
                                 </button>
                             </div>
                         </div>

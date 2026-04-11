@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { Check, X, Pencil, Eye, Edit2, Zap } from "lucide-react";
+import { Check, X, Pencil, Eye, Edit2, Zap, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
 import { QuizQuestion } from "../types";
 import type { LearningMaterialEditorHandle } from "./LearningMaterialEditor";
@@ -11,7 +11,6 @@ import ConfirmationDialog from "./ConfirmationDialog";
 import { TaskData } from "@/types";
 import Tooltip from "./Tooltip";
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { formatScheduleDate } from "@/lib/utils/dateFormat";
 
 // Dynamically import the editor components
@@ -147,6 +146,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     // Add a ref for the date picker container
     const datePickerRef = useRef<HTMLDivElement>(null);
+
+    // State for AI Publish
+    const [isAIPublishing, setIsAIPublishing] = useState(false);
 
     // Initialize scheduledDate when activeItem changes
     useEffect(() => {
@@ -767,6 +769,78 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         setShowSaveConfirmation(false);
     };
 
+    // Handle AI Publish - Select best existing scorecard with OpenAI and publish
+    const handleAIPublish = async () => {
+        // First validate base content except scorecard completeness for quizzes
+        if (activeItem?.type === 'quiz' && quizEditorRef.current) {
+            const currentQuestionConfig = quizEditorRef.current.getCurrentQuestionConfig?.();
+            if (!currentQuestionConfig?.title?.trim()) {
+                displayToast("Missing title", "Please add a question title before AI Publish", "🚫");
+                return;
+            }
+            if (!quizEditorRef.current.hasQuestionContent()) {
+                displayToast("Empty question", "Please add question content before AI Publish", "🚫");
+                return;
+            }
+        }
+
+        if (activeItem?.type === 'material' && learningMaterialEditorRef.current) {
+            const hasContent = learningMaterialEditorRef.current.hasContent();
+            if (!hasContent) {
+                displayToast("Empty learning material", "Please add content before publishing", "🚫");
+                return;
+            }
+        }
+
+        if (activeItem?.type === 'assignment' && assignmentEditorRef.current?.validateBeforePublish) {
+            const isValid = assignmentEditorRef.current.validateBeforePublish();
+            if (!isValid) return;
+        }
+
+        setIsAIPublishing(true);
+        displayToast("🤖 AI Publishing", "Assigning scorecards to missing questions...", "⏳");
+
+        try {
+            // For quizzes, assign best existing scorecards to missing subjective questions
+            if (activeItem?.type === 'quiz' && quizEditorRef.current) {
+                const assignmentResult = await quizEditorRef.current.autoAssignMissingScorecards();
+                if (assignmentResult.missingCount > 0 && assignmentResult.assignedCount === 0) {
+                    displayToast("No Scorecards Available", "Please create scorecards first", "⚠️");
+                    return;
+                }
+
+                if (assignmentResult.assignedCount > 0) {
+                    displayToast(
+                        "✨ Scorecards Assigned",
+                        `Assigned scorecards to ${assignmentResult.assignedCount} question(s). Validating...`,
+                        "🎯"
+                    );
+                }
+
+                // Run final publish validation after AI assignment
+                const isValidAfterAssignment = quizEditorRef.current.validateBeforePublish();
+                if (!isValidAfterAssignment) {
+                    return;
+                }
+            }
+
+            // Wait a moment for UI to update
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Now proceed with publish
+            onSetShowPublishConfirmation(true);
+        } catch (error) {
+            console.error("AI Publish error:", error);
+            displayToast(
+                "AI Publish Failed",
+                error instanceof Error ? error.message : "Could not find appropriate scorecard. Try manual selection.",
+                "⚠️"
+            );
+        } finally {
+            setIsAIPublishing(false);
+        }
+    };
+
     const isClosingDraft = confirmationType === 'exit_draft';
 
     const getButtonClasses = (tone: 'blue' | 'green' | 'yellow' | 'yellowStrong' | 'gray' | 'violet') => {
@@ -873,6 +947,29 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                             <Check size={16} className="mr-2" />
                                             Save draft
                                         </button>
+                                        {/* AI Publish button */}
+                                        <button
+                                            onClick={() => {
+                                                checkUnsavedScorecardChangesBeforeAction(() => {
+                                                    handleAIPublish();
+                                                });
+                                            }}
+                                            disabled={isAIPublishing}
+                                            className={`${getButtonClasses('violet')} mr-3 ${isAIPublishing ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            aria-label={`AI Publish ${activeItem?.type}`}
+                                        >
+                                            {isAIPublishing ? (
+                                                <>
+                                                    <div className="mr-2 w-4 h-4 border-2 border-violet-600 border-t-transparent rounded-full animate-spin dark:border-white dark:border-t-transparent"></div>
+                                                    Publishing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Sparkles size={16} className="mr-2" />
+                                                    AI Publish
+                                                </>
+                                            )}
+                                        </button>
                                         {/* Existing Publish button */}
                                         <button
                                             onClick={() => {
@@ -969,7 +1066,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     )}
                                     <button
                                         onClick={handleSaveClick}
-                                            className={getButtonClasses('green')}
+                                        className={getButtonClasses('green')}
                                         aria-label="Save changes"
                                     >
                                         <Check size={16} className="mr-2" />
@@ -977,7 +1074,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     </button>
                                     <button
                                         onClick={handleCancelEditClick}
-                                            className={getButtonClasses('gray')}
+                                        className={getButtonClasses('gray')}
                                         aria-label="Cancel editing"
                                     >
                                         <X size={16} className="mr-2" />
@@ -1002,7 +1099,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     )}
                                     <button
                                         onClick={onEnableEditMode}
-                                            className={getButtonClasses('violet')}
+                                        className={getButtonClasses('violet')}
                                         aria-label="Edit item"
                                     >
                                         <Pencil size={16} className="mr-2" />
@@ -1110,7 +1207,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 ref={quizEditorRef}
                                 key={`quiz-${activeItem.id}-${isEditMode}`}
                                 scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
-                                    currentQuestionId={activeQuestionId || undefined}
+                                currentQuestionId={activeQuestionId || undefined}
                                 onQuestionChange={onQuestionChange}
                                 onChange={(questions) => {
                                     // Track if there are questions for publish/preview button visibility
@@ -1208,49 +1305,49 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     setShowUnsavedScorecardChangesInfo(true);
                                 }}
                             />
-                            ) : activeItem?.type === 'assignment' ? (
-                                <DynamicAssignmentEditor
-                                    ref={assignmentEditorRef}
-                                    key={`assignment-${activeItem.id}-${isEditMode}`}
-                                    readOnly={activeItem.status === 'published' && !isEditMode}
-                                    status={activeItem.status}
-                                    showPublishConfirmation={showPublishConfirmation}
-                                    onPublishCancel={onPublishCancel}
-                                    taskId={activeItem.id}
-                                    scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
-                                    courseId={courseId}
-                                    schoolId={schoolId}
-                                    onValidationError={(title, message, emoji) => displayToast(title, message, emoji || '🚫')}
-                                    onPublishSuccess={(updatedData?: any) => {
-                                        if (updatedData) {
-                                            if (activeItem && updatedData.status === 'published') {
-                                                activeItem.status = 'published';
-                                                activeItem.title = updatedData.title || activeItem.title;
-                                                activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
-
-                                                if (updatedData.scheduled_publish_at) {
-                                                    setScheduledDate(new Date(updatedData.scheduled_publish_at));
-                                                } else {
-                                                    setScheduledDate(null);
-                                                }
-                                            }
-                                            onPublishConfirm();
-                                            onSetShowPublishConfirmation(false);
-
-
-                                            const publishMessage = updatedData.scheduled_publish_at ? `Your assignment has been scheduled for publishing` : `Your assignment has been published`;
-                                            displayToast("Published", publishMessage);
-                                        }
-                                    }}
-                                    onSaveSuccess={(updatedData?: any) => {
-                                        if (updatedData && activeItem) {
+                        ) : activeItem?.type === 'assignment' ? (
+                            <DynamicAssignmentEditor
+                                ref={assignmentEditorRef}
+                                key={`assignment-${activeItem.id}-${isEditMode}`}
+                                readOnly={activeItem.status === 'published' && !isEditMode}
+                                status={activeItem.status}
+                                showPublishConfirmation={showPublishConfirmation}
+                                onPublishCancel={onPublishCancel}
+                                taskId={activeItem.id}
+                                scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
+                                courseId={courseId}
+                                schoolId={schoolId}
+                                onValidationError={(title, message, emoji) => displayToast(title, message, emoji || '🚫')}
+                                onPublishSuccess={(updatedData?: any) => {
+                                    if (updatedData) {
+                                        if (activeItem && updatedData.status === 'published') {
+                                            activeItem.status = 'published';
                                             activeItem.title = updatedData.title || activeItem.title;
-                                            onSaveItem();
-                                            displayToast("Saved", "Your assignment has been updated");
+                                            activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
+
+                                            if (updatedData.scheduled_publish_at) {
+                                                setScheduledDate(new Date(updatedData.scheduled_publish_at));
+                                            } else {
+                                                setScheduledDate(null);
+                                            }
                                         }
-                                    }}
-                                    isPreviewMode={previewMode}
-                                />
+                                        onPublishConfirm();
+                                        onSetShowPublishConfirmation(false);
+
+
+                                        const publishMessage = updatedData.scheduled_publish_at ? `Your assignment has been scheduled for publishing` : `Your assignment has been published`;
+                                        displayToast("Published", publishMessage);
+                                    }
+                                }}
+                                onSaveSuccess={(updatedData?: any) => {
+                                    if (updatedData && activeItem) {
+                                        activeItem.title = updatedData.title || activeItem.title;
+                                        onSaveItem();
+                                        displayToast("Saved", "Your assignment has been updated");
+                                    }
+                                }}
+                                isPreviewMode={previewMode}
+                            />
                         ) : null}
                     </div>
                 </div>
