@@ -37,6 +37,72 @@ function parseCSV(value: string): string[] {
         .filter(Boolean)
 }
 
+function parseSkillWeights(value: string): Record<string, number> | undefined {
+    const pairs = value
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
+
+    if (pairs.length === 0) {
+        return undefined
+    }
+
+    const parsed: Record<string, number> = {}
+    pairs.forEach((pair) => {
+        const [skill, rawWeight] = pair.split(':').map((p) => p.trim())
+        if (!skill || !rawWeight) {
+            return
+        }
+        const weight = Number(rawWeight)
+        if (!Number.isNaN(weight) && weight > 0) {
+            parsed[skill] = weight
+        }
+    })
+
+    return Object.keys(parsed).length ? parsed : undefined
+}
+
+function normalizeDifficultyWeights(easy: number, medium: number, hard: number): Record<'easy' | 'medium' | 'hard', number> | undefined {
+    const values = {
+        easy: Math.max(0, easy),
+        medium: Math.max(0, medium),
+        hard: Math.max(0, hard),
+    }
+    const total = values.easy + values.medium + values.hard
+    if (total <= 0) {
+        return undefined
+    }
+
+    return {
+        easy: Number((values.easy / total).toFixed(4)),
+        medium: Number((values.medium / total).toFixed(4)),
+        hard: Number((values.hard / total).toFixed(4)),
+    }
+}
+
+function parseRoleSkillMap(value: string): Record<string, string[]> | undefined {
+    if (!value.trim()) {
+        return undefined
+    }
+
+    try {
+        const parsed = JSON.parse(value) as Record<string, unknown>
+        const out: Record<string, string[]> = {}
+        Object.entries(parsed).forEach(([key, rawHints]) => {
+            if (!Array.isArray(rawHints)) {
+                return
+            }
+            const hints = rawHints.map((hint) => String(hint).trim()).filter(Boolean)
+            if (hints.length > 0) {
+                out[key] = hints
+            }
+        })
+        return Object.keys(out).length ? out : undefined
+    } catch {
+        return undefined
+    }
+}
+
 export default function AssessmentEnginePage() {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -55,6 +121,15 @@ export default function AssessmentEnginePage() {
     const [jdTitle, setJdTitle] = useState('Product Analyst')
     const [jdDescription, setJdDescription] = useState('Looking for SQL, metrics design, and product thinking to drive experiments.')
     const [jdSkills, setJdSkills] = useState('SQL, Metrics, Product Thinking')
+    const [skillWeightsText, setSkillWeightsText] = useState('')
+    const [roleSkillMapText, setRoleSkillMapText] = useState('{\n  "sql": ["sql", "joins", "window function"],\n  "metrics": ["kpi", "retention", "funnel"]\n}')
+    const [typeMcq, setTypeMcq] = useState(10)
+    const [typeSaq, setTypeSaq] = useState(4)
+    const [typeCaselet, setTypeCaselet] = useState(2)
+    const [typeCoding, setTypeCoding] = useState(2)
+    const [diffEasy, setDiffEasy] = useState(25)
+    const [diffMedium, setDiffMedium] = useState(55)
+    const [diffHard, setDiffHard] = useState(20)
 
     const [assessment, setAssessment] = useState<Assessment | null>(null)
     const [assessmentId, setAssessmentId] = useState<number | null>(null)
@@ -141,6 +216,87 @@ export default function AssessmentEnginePage() {
             : 'Mode B · JD to Role-Aligned Hiring Assessment'
     }, [mode])
 
+    const semanticRedundancySummary = useMemo(() => {
+        const pairs = coverageReport?.redundancy?.semantic_duplicate_pairs ?? []
+        if (pairs.length === 0) {
+            return null
+        }
+
+        const averageScore = pairs.reduce((sum, pair) => sum + pair.semantic_score, 0) / pairs.length
+        const highestScore = pairs.reduce((max, pair) => Math.max(max, pair.semantic_score), 0)
+
+        return {
+            averageScore,
+            highestScore,
+            count: pairs.length,
+            pairs,
+        }
+    }, [coverageReport])
+
+    const effectivenessSummary = useMemo(() => {
+        const report = coverageReport?.effectiveness_report
+        if (!report) {
+            return null
+        }
+
+        const skillGapByLearner = Array.isArray(report.skill_gap_by_learner) ? report.skill_gap_by_learner : []
+        const itemPassRates = Array.isArray(report.item_pass_rates) ? report.item_pass_rates : []
+        const timeSpentPerItem = Array.isArray(report.time_spent_per_item) ? report.time_spent_per_item : []
+        const discrimination = report.discrimination ?? {}
+        const overDiscriminating = Array.isArray(discrimination.over_discriminating) ? discrimination.over_discriminating : []
+        const underDiscriminating = Array.isArray(discrimination.under_discriminating) ? discrimination.under_discriminating : []
+
+        return {
+            summary: report.summary ?? {},
+            skillGapByLearner,
+            itemPassRates,
+            timeSpentPerItem,
+            overDiscriminating,
+            underDiscriminating,
+        }
+    }, [coverageReport])
+
+    const getMetricLabel = (entry: Record<string, unknown>, fallback: string) => {
+        return String(
+            entry.learner_name ??
+            entry.candidate_name ??
+            entry.person_name ??
+            entry.user_name ??
+            entry.skill ??
+            entry.item_id ??
+            fallback
+        )
+    }
+
+    const getMetricValue = (entry: Record<string, unknown>, keys: string[]) => {
+        for (const key of keys) {
+            const value = entry[key]
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                return value
+            }
+        }
+        return null
+    }
+
+    const starterKitConfig = useMemo(() => {
+        const difficultyDistribution = normalizeDifficultyWeights(diffEasy, diffMedium, diffHard)
+        const skillWeights = parseSkillWeights(skillWeightsText)
+        const roleSkillMap = mode === 'jd' ? parseRoleSkillMap(roleSkillMapText) : undefined
+        const typeDistribution = {
+            mcq: Math.max(0, typeMcq),
+            saq: Math.max(0, typeSaq),
+            caselet: Math.max(0, typeCaselet),
+            coding: Math.max(0, typeCoding),
+        }
+
+        return {
+            difficulty_distribution: difficultyDistribution,
+            skill_weights: skillWeights,
+            role_skill_map: roleSkillMap,
+            type_distribution: typeDistribution,
+        }
+    }, [diffEasy, diffHard, diffMedium, mode, roleSkillMapText, skillWeightsText, typeCaselet, typeCoding, typeMcq, typeSaq])
+
     const initializeReviewState = (items: AssessmentItem[]) => {
         const nextState: Record<string, PendingReviewState> = {}
         items.forEach((item) => {
@@ -179,6 +335,9 @@ export default function AssessmentEnginePage() {
                 modules,
                 skills: parseCSV(curriculumSkills),
             },
+            type_distribution: starterKitConfig.type_distribution,
+            difficulty_distribution: starterKitConfig.difficulty_distribution,
+            skill_weights: starterKitConfig.skill_weights,
         }
     }
 
@@ -191,6 +350,10 @@ export default function AssessmentEnginePage() {
                 description: jdDescription,
                 skills: parseCSV(jdSkills),
             },
+            type_distribution: starterKitConfig.type_distribution,
+            difficulty_distribution: starterKitConfig.difficulty_distribution,
+            skill_weights: starterKitConfig.skill_weights,
+            role_skill_map: starterKitConfig.role_skill_map,
         }
     }
 
@@ -460,6 +623,57 @@ export default function AssessmentEnginePage() {
                         </div>
                     )}
 
+                    <details className="rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-[#2A2A2A] dark:bg-[#171717]">
+                        <summary className="cursor-pointer text-sm font-semibold text-neutral-800 dark:text-gray-100">
+                            Starter Kit Management
+                        </summary>
+                        <div className="mt-3 grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <label className={labelClass}>Question type template</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input className={inputClass} type="number" min={0} value={typeMcq} onChange={(e) => setTypeMcq(Number(e.target.value) || 0)} placeholder="MCQ" />
+                                    <input className={inputClass} type="number" min={0} value={typeSaq} onChange={(e) => setTypeSaq(Number(e.target.value) || 0)} placeholder="SAQ" />
+                                    <input className={inputClass} type="number" min={0} value={typeCaselet} onChange={(e) => setTypeCaselet(Number(e.target.value) || 0)} placeholder="Caselet" />
+                                    <input className={inputClass} type="number" min={0} value={typeCoding} onChange={(e) => setTypeCoding(Number(e.target.value) || 0)} placeholder="Coding" />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className={labelClass}>Difficulty taxonomy (%)</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <input className={inputClass} type="number" min={0} value={diffEasy} onChange={(e) => setDiffEasy(Number(e.target.value) || 0)} placeholder="Easy" />
+                                    <input className={inputClass} type="number" min={0} value={diffMedium} onChange={(e) => setDiffMedium(Number(e.target.value) || 0)} placeholder="Medium" />
+                                    <input className={inputClass} type="number" min={0} value={diffHard} onChange={(e) => setDiffHard(Number(e.target.value) || 0)} placeholder="Hard" />
+                                </div>
+                                <p className="text-xs text-neutral-600 dark:text-gray-400">Auto-normalized to a valid distribution.</p>
+                            </div>
+
+                            <div>
+                                <label className={labelClass}>Skill weights (format: skill:weight, ...)</label>
+                                <input
+                                    className={inputClass}
+                                    value={skillWeightsText}
+                                    onChange={(e) => setSkillWeightsText(e.target.value)}
+                                    placeholder="sql:0.4, metrics:0.3, product_thinking:0.3"
+                                />
+                            </div>
+
+                            {mode === 'jd' && (
+                                <div>
+                                    <label className={labelClass}>Role-skill mapping (JSON)</label>
+                                    <textarea
+                                        className={`${inputClass} min-h-28 font-mono text-xs`}
+                                        value={roleSkillMapText}
+                                        onChange={(e) => setRoleSkillMapText(e.target.value)}
+                                    />
+                                    <p className="mt-1 text-xs text-neutral-600 dark:text-gray-400">
+                                        Invalid JSON is ignored safely; defaults remain active.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </details>
+
                     {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">{error}</p>}
                 </section>
 
@@ -478,9 +692,194 @@ export default function AssessmentEnginePage() {
                     {!coverageReport ? (
                         <p className="text-sm text-neutral-600 dark:text-gray-400">Generate an assessment to see validation metrics.</p>
                     ) : (
-                        <pre className="max-h-72 overflow-auto rounded-md bg-neutral-900 p-3 text-xs text-neutral-100 dark:bg-[#0b0b0b]">
-                            {JSON.stringify(coverageReport, null, 2)}
-                        </pre>
+                        <div className="space-y-3">
+                            {effectivenessSummary && (
+                                <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-[#2A2A2A] dark:bg-[#171717]">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Assessment Effectiveness Dashboard</h3>
+                                        <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-800 dark:bg-[#2A2A2A] dark:text-gray-200">
+                                            after attempts
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-3 grid gap-3 md:grid-cols-3">
+                                        <div className="rounded-md bg-white p-3 dark:bg-[#0f0f0f]">
+                                            <div className="text-xs text-neutral-500 dark:text-gray-400">Attempts</div>
+                                            <div className="mt-1 text-lg font-semibold text-neutral-900 dark:text-white">
+                                                {effectivenessSummary.summary.attempt_count ?? 'n/a'}
+                                            </div>
+                                        </div>
+                                        <div className="rounded-md bg-white p-3 dark:bg-[#0f0f0f]">
+                                            <div className="text-xs text-neutral-500 dark:text-gray-400">Learners / Candidates</div>
+                                            <div className="mt-1 text-lg font-semibold text-neutral-900 dark:text-white">
+                                                {(effectivenessSummary.summary.learner_count ?? effectivenessSummary.summary.candidate_count) ?? 'n/a'}
+                                            </div>
+                                        </div>
+                                        <div className="rounded-md bg-white p-3 dark:bg-[#0f0f0f]">
+                                            <div className="text-xs text-neutral-500 dark:text-gray-400">Tracked items</div>
+                                            <div className="mt-1 text-lg font-semibold text-neutral-900 dark:text-white">
+                                                {effectivenessSummary.itemPassRates.length || effectivenessSummary.timeSpentPerItem.length || effectivenessSummary.skillGapByLearner.length || 'n/a'}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                        <div className="rounded-md border border-neutral-200 bg-white p-3 dark:border-[#2A2A2A] dark:bg-[#0f0f0f]">
+                                            <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-gray-400">Skill gap by learner/candidate</h4>
+                                            <div className="mt-2 space-y-2 text-sm text-neutral-700 dark:text-gray-300">
+                                                {effectivenessSummary.skillGapByLearner.length > 0 ? (
+                                                    effectivenessSummary.skillGapByLearner.slice(0, 5).map((entry, index) => {
+                                                        const normalized = entry as Record<string, unknown>
+                                                        const label = getMetricLabel(normalized, `Person ${index + 1}`)
+                                                        const gap = getMetricValue(normalized, ['gap', 'skill_gap', 'score_gap'])
+
+                                                        return (
+                                                            <div key={`${label}-${index}`} className="flex items-center justify-between gap-3 rounded border border-neutral-200 px-3 py-2 dark:border-[#222222]">
+                                                                <span className="font-medium text-neutral-900 dark:text-white">{label}</span>
+                                                                <span>{gap !== null ? `${(gap * 100).toFixed(1)}% gap` : 'n/a'}</span>
+                                                            </div>
+                                                        )
+                                                    })
+                                                ) : (
+                                                    <p className="text-sm text-neutral-500 dark:text-gray-400">No skill gap data available yet.</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-md border border-neutral-200 bg-white p-3 dark:border-[#2A2A2A] dark:bg-[#0f0f0f]">
+                                            <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-gray-400">Item pass rates</h4>
+                                            <div className="mt-2 space-y-2 text-sm text-neutral-700 dark:text-gray-300">
+                                                {effectivenessSummary.itemPassRates.length > 0 ? (
+                                                    effectivenessSummary.itemPassRates.slice(0, 5).map((entry, index) => {
+                                                        const normalized = entry as Record<string, unknown>
+                                                        const label = getMetricLabel(normalized, `Item ${index + 1}`)
+                                                        const rate = getMetricValue(normalized, ['pass_rate', 'passRate', 'rate'])
+
+                                                        return (
+                                                            <div key={`${label}-${index}`} className="flex items-center justify-between gap-3 rounded border border-neutral-200 px-3 py-2 dark:border-[#222222]">
+                                                                <span className="font-medium text-neutral-900 dark:text-white">{label}</span>
+                                                                <span>{rate !== null ? `${(rate * 100).toFixed(1)}%` : 'n/a'}</span>
+                                                            </div>
+                                                        )
+                                                    })
+                                                ) : (
+                                                    <p className="text-sm text-neutral-500 dark:text-gray-400">No pass-rate data available yet.</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-md border border-neutral-200 bg-white p-3 dark:border-[#2A2A2A] dark:bg-[#0f0f0f]">
+                                            <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-gray-400">Time spent per item</h4>
+                                            <div className="mt-2 space-y-2 text-sm text-neutral-700 dark:text-gray-300">
+                                                {effectivenessSummary.timeSpentPerItem.length > 0 ? (
+                                                    effectivenessSummary.timeSpentPerItem.slice(0, 5).map((entry, index) => {
+                                                        const normalized = entry as Record<string, unknown>
+                                                        const label = getMetricLabel(normalized, `Item ${index + 1}`)
+                                                        const seconds = getMetricValue(normalized, ['avg_seconds', 'seconds', 'avg_time_spent'])
+
+                                                        return (
+                                                            <div key={`${label}-${index}`} className="flex items-center justify-between gap-3 rounded border border-neutral-200 px-3 py-2 dark:border-[#222222]">
+                                                                <span className="font-medium text-neutral-900 dark:text-white">{label}</span>
+                                                                <span>{seconds !== null ? `${seconds.toFixed(1)}s` : 'n/a'}</span>
+                                                            </div>
+                                                        )
+                                                    })
+                                                ) : (
+                                                    <p className="text-sm text-neutral-500 dark:text-gray-400">No time-spent data available yet.</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-md border border-neutral-200 bg-white p-3 dark:border-[#2A2A2A] dark:bg-[#0f0f0f]">
+                                            <h4 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-gray-400">Over / under-discriminating questions</h4>
+                                            <div className="mt-2 space-y-3 text-sm text-neutral-700 dark:text-gray-300">
+                                                <div>
+                                                    <div className="mb-1 text-xs font-medium text-neutral-500 dark:text-gray-400">Over-discriminating</div>
+                                                    {effectivenessSummary.overDiscriminating.length > 0 ? (
+                                                        effectivenessSummary.overDiscriminating.slice(0, 3).map((entry, index) => {
+                                                            const normalized = entry as Record<string, unknown>
+                                                            const label = getMetricLabel(normalized, `Item ${index + 1}`)
+                                                            const value = getMetricValue(normalized, ['index', 'discrimination_index', 'score'])
+                                                            return (
+                                                                <div key={`over-${label}-${index}`} className="flex items-center justify-between gap-3 rounded border border-neutral-200 px-3 py-2 dark:border-[#222222]">
+                                                                    <span className="font-medium text-neutral-900 dark:text-white">{label}</span>
+                                                                    <span>{value !== null ? value.toFixed(2) : 'n/a'}</span>
+                                                                </div>
+                                                            )
+                                                        })
+                                                    ) : (
+                                                        <p className="text-sm text-neutral-500 dark:text-gray-400">No over-discriminating items flagged.</p>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="mb-1 text-xs font-medium text-neutral-500 dark:text-gray-400">Under-discriminating</div>
+                                                    {effectivenessSummary.underDiscriminating.length > 0 ? (
+                                                        effectivenessSummary.underDiscriminating.slice(0, 3).map((entry, index) => {
+                                                            const normalized = entry as Record<string, unknown>
+                                                            const label = getMetricLabel(normalized, `Item ${index + 1}`)
+                                                            const value = getMetricValue(normalized, ['index', 'discrimination_index', 'score'])
+                                                            return (
+                                                                <div key={`under-${label}-${index}`} className="flex items-center justify-between gap-3 rounded border border-neutral-200 px-3 py-2 dark:border-[#222222]">
+                                                                    <span className="font-medium text-neutral-900 dark:text-white">{label}</span>
+                                                                    <span>{value !== null ? value.toFixed(2) : 'n/a'}</span>
+                                                                </div>
+                                                            )
+                                                        })
+                                                    ) : (
+                                                        <p className="text-sm text-neutral-500 dark:text-gray-400">No under-discriminating items flagged.</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {semanticRedundancySummary && (
+                                <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-[#2A2A2A] dark:bg-[#171717]">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Semantic Redundancy Score</h3>
+                                        <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-800 dark:bg-[#2A2A2A] dark:text-gray-200">
+                                            {semanticRedundancySummary.count} pair{semanticRedundancySummary.count > 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+                                    <div className="mt-3 grid gap-3 md:grid-cols-3">
+                                        <div className="rounded-md bg-white p-3 dark:bg-[#0f0f0f]">
+                                            <div className="text-xs text-neutral-500 dark:text-gray-400">Average score</div>
+                                            <div className="mt-1 text-lg font-semibold text-neutral-900 dark:text-white">
+                                                {(semanticRedundancySummary.averageScore * 100).toFixed(1)}%
+                                            </div>
+                                        </div>
+                                        <div className="rounded-md bg-white p-3 dark:bg-[#0f0f0f]">
+                                            <div className="text-xs text-neutral-500 dark:text-gray-400">Highest score</div>
+                                            <div className="mt-1 text-lg font-semibold text-neutral-900 dark:text-white">
+                                                {(semanticRedundancySummary.highestScore * 100).toFixed(1)}%
+                                            </div>
+                                        </div>
+                                        <div className="rounded-md bg-white p-3 dark:bg-[#0f0f0f]">
+                                            <div className="text-xs text-neutral-500 dark:text-gray-400">Flagged pairs</div>
+                                            <div className="mt-1 text-lg font-semibold text-neutral-900 dark:text-white">
+                                                {semanticRedundancySummary.count}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 space-y-2 text-sm text-neutral-700 dark:text-gray-300">
+                                        {semanticRedundancySummary.pairs.slice(0, 5).map((pair) => (
+                                            <div key={`${pair.pair[0]}-${pair.pair[1]}`} className="rounded-md border border-neutral-200 bg-white px-3 py-2 dark:border-[#2A2A2A] dark:bg-[#0f0f0f]">
+                                                <span className="font-medium text-neutral-900 dark:text-white">
+                                                    {pair.pair[0]} · {pair.pair[1]}
+                                                </span>{' '}
+                                                <span className="text-neutral-500 dark:text-gray-400">
+                                                    semantic {(pair.semantic_score * 100).toFixed(1)}% · lexical {(pair.lexical_score * 100).toFixed(1)}%
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            <pre className="max-h-72 overflow-auto rounded-md bg-neutral-900 p-3 text-xs text-neutral-100 dark:bg-[#0b0b0b]">
+                                {JSON.stringify(coverageReport, null, 2)}
+                            </pre>
+                        </div>
                     )}
                 </section>
 

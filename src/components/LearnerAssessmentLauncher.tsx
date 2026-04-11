@@ -191,24 +191,29 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
     }
 
     return (
-        <section className="mb-6 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-[#121212]">
-            <div className="mb-4 flex items-center justify-between gap-3">
+        <section className="mb-6 overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-br from-white via-gray-50 to-white p-5 shadow-sm dark:border-gray-800 dark:from-[#121212] dark:via-[#101218] dark:to-[#121212]">
+            <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
-                    <h3 className="text-base font-medium text-black dark:text-white">Assessment Engine</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Launch assessments from existing courses or from a job description.
+                    <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-600 dark:border-gray-700 dark:bg-[#171717] dark:text-gray-300">
+                        AI Powered
+                    </div>
+                    <h3 className="text-lg font-semibold text-black dark:text-white">Assessment Engine</h3>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                        Generate assessments from course curriculum or an uploaded job description.
                     </p>
                 </div>
-                <Sparkles size={18} className="text-gray-500 dark:text-gray-400" />
+                <div className="rounded-xl border border-gray-200 bg-white p-2.5 dark:border-gray-700 dark:bg-[#171717]">
+                    <Sparkles size={18} className="text-gray-500 dark:text-gray-300" />
+                </div>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-                <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-                    <div className="mb-2 flex items-center gap-2 text-sm font-medium text-black dark:text-white">
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-[#0f0f0f]">
+                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-black dark:text-white">
                         <FileText size={16} />
                         Curriculum based
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {availableCourses.length === 0 ? (
                             <p className="text-sm text-gray-600 dark:text-gray-400">No courses available yet.</p>
                         ) : (
@@ -216,7 +221,7 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
                                 <select
                                     value={selectedCourseId ?? ""}
                                     onChange={(e) => setSelectedCourseId(Number(e.target.value))}
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#0f0f0f]"
+                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-400 dark:border-gray-700 dark:bg-[#121212] dark:focus:border-gray-500"
                                 >
                                     {availableCourses.map((course) => (
                                         <option key={course.id} value={course.id}>
@@ -229,7 +234,7 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
                                     type="button"
                                     onClick={launchCurriculum}
                                     disabled={!selectedCourseId}
-                                    className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-4 py-2 text-xs font-medium hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:hover:bg-[#2a2a2a]"
+                                    className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-900 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-[#171717] dark:text-white dark:hover:bg-[#232323]"
                                 >
                                     Generate from curriculum
                                     <ArrowRight size={12} />
@@ -239,19 +244,20 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
                     </div>
                 </div>
 
-                <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-                    <div className="mb-2 text-sm font-medium text-black dark:text-white">JD based (topic extraction)</div>
-                    <div className="space-y-2">
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-[#0f0f0f]">
+                    <div className="mb-3 text-sm font-semibold text-black dark:text-white">JD based (topic extraction)</div>
+                    <div className="space-y-3">
                         <input
                             value={jdTitle}
                             onChange={(e) => setJdTitle(e.target.value)}
                             placeholder="Role title (auto-filled from JD upload)"
                             disabled={!jdText.trim()}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-[#0f0f0f]"
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-gray-400 disabled:cursor-not-allowed disabled:opacity-70 dark:border-gray-700 dark:bg-[#121212] dark:focus:border-gray-500"
                         />
-                        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 px-3 py-3 text-sm dark:border-gray-700">
-                            <Upload size={14} />
-                            <span>{jdFileName || "Upload JD (PDF or Word)"}</span>
+
+                        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-4 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-gray-600 dark:bg-[#131313] dark:text-gray-200 dark:hover:bg-[#1a1a1a]">
+                            <Upload size={15} />
+                            <span className="truncate">{jdFileName || "Upload JD (PDF or Word)"}</span>
                             <input
                                 type="file"
                                 accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -264,20 +270,24 @@ export default function LearnerAssessmentLauncher({ courses, orgId }: LearnerAss
                                 }}
                             />
                         </label>
+
                         {isExtractingTopics && (
                             <p className="text-xs text-gray-600 dark:text-gray-400">Extracting text and topics from JD file...</p>
                         )}
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
+
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:border-gray-700 dark:bg-[#131313] dark:text-gray-400">
                             Extracted topics (max 1): {extractedTopics.length ? extractedTopics.join(", ") : "Upload a JD file to extract topics"}
-                        </p>
+                        </div>
+
                         {jdError && <p className="text-xs text-red-600 dark:text-red-400">{jdError}</p>}
+
                         <button
                             type="button"
                             onClick={() => {
                                 void launchJd()
                             }}
                             disabled={!jdText.trim() || extractedTopics.length === 0 || isExtractingTopics || isLaunchingJd}
-                            className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black"
+                            className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black"
                         >
                             {isLaunchingJd ? "Preparing courses..." : "Generate questions"}
                             <ArrowRight size={12} />

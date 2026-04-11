@@ -24,6 +24,10 @@ export interface GenerateRequest {
     target_level: 'beginner' | 'intermediate' | 'advanced'
     curriculum?: CurriculumInput
     jd?: JDInput
+    type_distribution?: Partial<Record<'mcq' | 'saq' | 'caselet' | 'coding', number>>
+    difficulty_distribution?: Partial<Record<'easy' | 'medium' | 'hard', number>>
+    skill_weights?: Record<string, number>
+    role_skill_map?: Record<string, string[]>
 }
 
 export interface AssessmentItem {
@@ -62,11 +66,31 @@ export interface CoverageReport {
     redundancy?: {
         duplicate_pair_count: number
         duplicate_pairs: Array<[string, string]>
+        semantic_duplicate_pair_count?: number
+        semantic_duplicate_pairs?: Array<{
+            pair: [string, string]
+            semantic_score: number
+            lexical_score: number
+        }>
     }
     review_summary?: {
         accepted: number
         rejected: number
         pending: number
+    }
+    effectiveness_report?: {
+        summary?: {
+            attempt_count?: number | null
+            candidate_count?: number | null
+            learner_count?: number | null
+        }
+        skill_gap_by_learner?: Array<Record<string, unknown>>
+        item_pass_rates?: Array<Record<string, unknown>>
+        time_spent_per_item?: Array<Record<string, unknown>>
+        discrimination?: {
+            over_discriminating?: Array<Record<string, unknown>>
+            under_discriminating?: Array<Record<string, unknown>>
+        }
     }
     error?: string
 }
